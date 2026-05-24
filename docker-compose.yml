@@ -1,0 +1,244 @@
+version: "3.8"
+
+# =====================================================================
+# FDA Drug Safety Signal Detection — Big Data Stack
+# Hadoop (HDFS) + Hive + Spark + PostgreSQL + Airflow + Streamlit
+# Everything runs locally for $0.
+# Start with:   docker compose up -d
+# =====================================================================
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.9.2-python3.11
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    _PIP_ADDITIONAL_REQUIREMENTS: >-
+      pyspark==3.5.1 xgboost==2.0.3 scikit-learn==1.4.2
+      pandas==2.2.2 numpy==1.26.4 requests==2.32.3
+      psycopg2-binary==2.9.9 sqlalchemy==1.4.52
+  volumes:
+    - ./pipeline:/opt/airflow/dags
+    - ./ingestion:/opt/airflow/ingestion
+    - ./spark:/opt/airflow/spark
+    - ./ml:/opt/airflow/ml
+    - ./hive:/opt/airflow/hive
+    - ./data:/opt/airflow/data
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    - airflow-db
+
+services:
+
+  # ----------------------- Hadoop HDFS ------------------------------
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    hostname: namenode
+    environment:
+      - CLUSTER_NAME=fda-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    ports:
+      - "9870:9870"   # Namenode UI
+      - "9000:9000"   # HDFS RPC
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./data:/local-data
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    hostname: datanode
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SERVICE_PRECONDITION=namenode:9870
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      - namenode
+
+  # ----------------------- Hive Metastore + Server ------------------
+  hive-metastore-db:
+    image: postgres:13
+    container_name: hive-metastore-db
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - hive_metastore_db:/var/lib/postgresql/data
+
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    environment:
+      - SERVICE_PRECONDITION=hive-metastore-db:5432 namenode:9000
+      - HIVE_METASTORE_DB_TYPE=postgres
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    command: /opt/hive/bin/hive --service metastore
+    ports:
+      - "9083:9083"
+    depends_on:
+      - hive-metastore-db
+      - namenode
+      - datanode
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    environment:
+      - SERVICE_PRECONDITION=hive-metastore:9083
+      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-metastore-db:5432/metastore
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    command: /opt/hive/bin/hiveserver2
+    ports:
+      - "10000:10000"   # HiveServer2 (Beeline / JDBC)
+      - "10002:10002"   # Hive Web UI
+    volumes:
+      - ./hive:/sql
+    depends_on:
+      - hive-metastore
+
+  # ----------------------- Apache Spark -----------------------------
+  spark-master:
+    image: bitnami/spark:3.5
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"   # Spark Master UI
+      - "7077:7077"   # Spark Master RPC
+    volumes:
+      - ./spark:/opt/spark-apps
+      - ./data:/opt/spark-data
+
+  spark-worker:
+    image: bitnami/spark:3.5
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
+    depends_on:
+      - spark-master
+    volumes:
+      - ./spark:/opt/spark-apps
+      - ./data:/opt/spark-data
+
+  # ----------------------- PostgreSQL (results) ---------------------
+  postgres:
+    image: postgres:15
+    container_name: fda-postgres
+    environment:
+      POSTGRES_USER: fda
+      POSTGRES_PASSWORD: fda
+      POSTGRES_DB: fda_signals
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  # ----------------------- Airflow ----------------------------------
+  airflow-db:
+    image: postgres:15
+    container_name: airflow-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_db:/var/lib/postgresql/data
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate &&
+        airflow users create --username admin --password admin \
+          --firstname Saif --lastname Mohammed --role Admin \
+          --email smohammed8@seattleu.edu || true
+    restart: "no"
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8081:8080"
+    restart: always
+    depends_on:
+      - airflow-init
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: always
+    depends_on:
+      - airflow-init
+
+  # ----------------------- Streamlit Dashboard ----------------------
+  streamlit:
+    image: python:3.11-slim
+    container_name: fda-streamlit
+    working_dir: /app
+    command: >
+      bash -c "pip install --no-cache-dir
+      streamlit==1.35.0 pandas==2.2.2 plotly==5.22.0
+      psycopg2-binary==2.9.9 sqlalchemy==1.4.52 numpy==1.26.4
+      && streamlit run app.py --server.address=0.0.0.0 --server.port=8501"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=fda_signals
+      - POSTGRES_USER=fda
+      - POSTGRES_PASSWORD=fda
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app
+    depends_on:
+      - postgres
+
+  # ----------------------- FastAPI ----------------------------------
+  api:
+    image: python:3.11-slim
+    container_name: fda-api
+    working_dir: /app
+    command: >
+      bash -c "pip install --no-cache-dir
+      fastapi==0.111.0 uvicorn==0.30.1 sqlalchemy==1.4.52
+      psycopg2-binary==2.9.9 pandas==2.2.2 pydantic==2.7.1
+      && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=fda_signals
+      - POSTGRES_USER=fda
+      - POSTGRES_PASSWORD=fda
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    depends_on:
+      - postgres
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hive_metastore_db:
+  postgres_data:
+  airflow_db:
+  airflow-logs:

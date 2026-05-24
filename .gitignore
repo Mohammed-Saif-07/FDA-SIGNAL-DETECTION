@@ -1,0 +1,38 @@
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# FAERS raw data (huge — do not commit)
+data/raw/*.zip
+data/raw/*.json
+data/raw/*.json.zip
+data/processed/*.parquet
+data/processed/_SUCCESS
+data/processed/*/
+
+# Models
+ml/models/*.json
+ml/models/*.pkl
+ml/models/*.bin
+
+# Logs
+*.log
+logs/
+airflow-logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

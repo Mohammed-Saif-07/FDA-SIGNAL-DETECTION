@@ -1,0 +1,57 @@
+drug_name,reaction_term,warning_date,warning_type,recall_date,source_url,notes
+ROFECOXIB,MYOCARDIAL INFARCTION,2004-09-30,RECALL,2004-09-30,https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/vioxx-rofecoxib-questions-and-answers,Vioxx withdrawn worldwide due to cardiovascular risk
+ROFECOXIB,CARDIAC FAILURE,2004-09-30,RECALL,2004-09-30,https://www.fda.gov/drugs/postmarket-drug-safety-information-patients-and-providers/vioxx-rofecoxib-questions-and-answers,Vioxx withdrawn worldwide due to cardiovascular risk
+VALDECOXIB,STEVENS-JOHNSON SYNDROME,2005-04-07,RECALL,2005-04-07,https://www.fda.gov/drugs,Bextra withdrawn for serious skin reactions and CV risk
+VALDECOXIB,TOXIC EPIDERMAL NECROLYSIS,2005-04-07,RECALL,2005-04-07,https://www.fda.gov/drugs,Bextra withdrawn
+SIBUTRAMINE,MYOCARDIAL INFARCTION,2010-10-08,RECALL,2010-10-08,https://www.fda.gov/drugs,Meridia withdrawn for cardiovascular events
+SIBUTRAMINE,STROKE,2010-10-08,RECALL,2010-10-08,https://www.fda.gov/drugs,Meridia withdrawn for cardiovascular events
+PROPOXYPHENE,CARDIAC ARRHYTHMIA,2010-11-19,RECALL,2010-11-19,https://www.fda.gov/drugs,Darvon and Darvocet withdrawn
+ROSIGLITAZONE,MYOCARDIAL INFARCTION,2010-09-23,BOXED_WARNING,,https://www.fda.gov/drugs,Avandia restricted use due to CV risk
+ROSIGLITAZONE,CARDIAC FAILURE,2007-08-14,BOXED_WARNING,,https://www.fda.gov/drugs,Avandia boxed warning for heart failure
+PIOGLITAZONE,BLADDER CANCER,2011-08-04,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Actos linked to bladder cancer
+DABIGATRAN,HAEMORRHAGE,2011-12-07,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Pradaxa bleeding risk
+DRONEDARONE,HEPATOTOXICITY,2011-01-14,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Multaq liver injury warning
+DRONEDARONE,CARDIAC FAILURE,2011-07-21,BOXED_WARNING,,https://www.fda.gov/drugs,Multaq heart failure warning
+QUETIAPINE,QT PROLONGATION,2011-07-29,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Seroquel QT prolongation
+ZIPRASIDONE,DRESS SYNDROME,2014-12-11,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Geodon DRESS warning
+CITALOPRAM,QT PROLONGATION,2011-08-24,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Celexa max dose lowered for QT
+ONDANSETRON,QT PROLONGATION,2012-06-29,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Zofran QT warning
+DOMPERIDONE,VENTRICULAR ARRHYTHMIA,2014-09-12,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Domperidone cardiac risk
+TERFENADINE,TORSADES DE POINTES,1997-01-13,RECALL,1998-02-27,https://www.fda.gov/drugs,Seldane withdrawn
+CISAPRIDE,TORSADES DE POINTES,2000-03-23,RECALL,2000-07-14,https://www.fda.gov/drugs,Propulsid withdrawn
+TROGLITAZONE,HEPATIC FAILURE,2000-03-21,RECALL,2000-03-21,https://www.fda.gov/drugs,Rezulin withdrawn for liver injury
+NEFAZODONE,HEPATIC FAILURE,2003-12-31,RECALL,2004-05-20,https://www.fda.gov/drugs,Serzone withdrawn for liver toxicity
+PERGOLIDE,VALVULAR HEART DISEASE,2007-03-29,RECALL,2007-03-29,https://www.fda.gov/drugs,Permax withdrawn
+ZOLPIDEM,SOMNAMBULISM,2013-01-10,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Ambien sleep-driving warning; dose lowered for women
+VARENICLINE,SUICIDAL IDEATION,2009-07-01,BOXED_WARNING,,https://www.fda.gov/drugs,Chantix neuropsychiatric BBW (later removed 2016)
+ATOMOXETINE,HEPATOTOXICITY,2004-12-17,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Strattera liver injury warning
+ATOMOXETINE,SUICIDAL IDEATION,2005-09-29,BOXED_WARNING,,https://www.fda.gov/drugs,Strattera suicidal ideation BBW
+FLUOROQUINOLONE,TENDON RUPTURE,2008-07-08,BOXED_WARNING,,https://www.fda.gov/drugs,Fluoroquinolone tendon BBW
+LEVOFLOXACIN,TENDON RUPTURE,2008-07-08,BOXED_WARNING,,https://www.fda.gov/drugs,Levaquin tendon BBW
+CIPROFLOXACIN,TENDON RUPTURE,2008-07-08,BOXED_WARNING,,https://www.fda.gov/drugs,Cipro tendon BBW
+MOXIFLOXACIN,AORTIC ANEURYSM,2018-12-20,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Fluoroquinolone aortic aneurysm warning
+MONTELUKAST,SUICIDAL IDEATION,2020-03-04,BOXED_WARNING,,https://www.fda.gov/drugs,Singulair neuropsychiatric BBW
+CLOZAPINE,AGRANULOCYTOSIS,1989-10-01,BOXED_WARNING,,https://www.fda.gov/drugs,Clozaril BBW REMS required
+ISOTRETINOIN,DEPRESSION,2005-09-22,BOXED_WARNING,,https://www.fda.gov/drugs,Accutane psychiatric BBW
+THALIDOMIDE,TERATOGENIC EFFECT,1998-07-16,BOXED_WARNING,,https://www.fda.gov/drugs,Thalomid REMS
+NATALIZUMAB,PROGRESSIVE MULTIFOCAL LEUKOENCEPHALOPATHY,2008-07-31,BOXED_WARNING,,https://www.fda.gov/drugs,Tysabri PML BBW
+BUPROPION,SEIZURE,2008-12-23,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Bupropion seizure warning
+LAMOTRIGINE,HAEMOPHAGOCYTIC LYMPHOHISTIOCYTOSIS,2018-04-25,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Lamictal HLH warning
+DIVALPROEX,HEPATIC FAILURE,2013-05-06,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Depakote liver/pancreatic warning
+TOLVAPTAN,HEPATOTOXICITY,2013-04-30,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Samsca liver injury warning
+TERIFLUNOMIDE,HEPATOTOXICITY,2016-11-15,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Aubagio liver injury warning
+LORCASERIN,MALIGNANT NEOPLASM,2020-02-13,RECALL,2020-02-13,https://www.fda.gov/drugs,Belviq withdrawn for cancer risk
+RANITIDINE,N-NITROSODIMETHYLAMINE IMPURITY,2020-04-01,RECALL,2020-04-01,https://www.fda.gov/drugs,Zantac withdrawn for NDMA
+TOFACITINIB,MYOCARDIAL INFARCTION,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Xeljanz CV BBW
+TOFACITINIB,MALIGNANT NEOPLASM,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Xeljanz cancer BBW
+TOFACITINIB,VENOUS THROMBOEMBOLISM,2019-07-26,BOXED_WARNING,,https://www.fda.gov/drugs,Xeljanz thrombosis BBW
+UPADACITINIB,MYOCARDIAL INFARCTION,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Rinvoq BBW
+BARICITINIB,VENOUS THROMBOEMBOLISM,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Olumiant BBW
+SEMAGLUTIDE,ILEUS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,GLP-1 ileus warning
+SEMAGLUTIDE,GASTROPARESIS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,GLP-1 gastroparesis warning
+LIRAGLUTIDE,MEDULLARY THYROID NEOPLASM,2010-01-25,BOXED_WARNING,,https://www.fda.gov/drugs,Victoza MTC BBW
+TIRZEPATIDE,GASTROPARESIS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Mounjaro gastroparesis warning
+RIVAROXABAN,HAEMORRHAGE,2014-01-14,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Xarelto bleeding warning
+APIXABAN,HAEMORRHAGE,2014-01-14,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Eliquis bleeding warning
+PEMBROLIZUMAB,IMMUNE-MEDIATED PNEUMONITIS,2017-05-01,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Keytruda pneumonitis warning
+NIVOLUMAB,IMMUNE-MEDIATED HEPATITIS,2017-05-01,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Opdivo hepatitis warning

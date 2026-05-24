@@ -1,0 +1,16 @@
+drug_name,recall_date,recall_class,reason,source_url
+ROFECOXIB,2004-09-30,I,Cardiovascular events (Vioxx),https://www.fda.gov/drugs
+VALDECOXIB,2005-04-07,I,Cardiovascular and skin reactions (Bextra),https://www.fda.gov/drugs
+SIBUTRAMINE,2010-10-08,I,Cardiovascular events (Meridia),https://www.fda.gov/drugs
+PROPOXYPHENE,2010-11-19,I,Cardiac arrhythmia (Darvon),https://www.fda.gov/drugs
+TROGLITAZONE,2000-03-21,I,Hepatic failure (Rezulin),https://www.fda.gov/drugs
+NEFAZODONE,2004-05-20,I,Hepatic failure (Serzone),https://www.fda.gov/drugs
+CISAPRIDE,2000-07-14,I,Torsades de pointes (Propulsid),https://www.fda.gov/drugs
+TERFENADINE,1998-02-27,I,Torsades de pointes (Seldane),https://www.fda.gov/drugs
+PERGOLIDE,2007-03-29,I,Valvular heart disease (Permax),https://www.fda.gov/drugs
+LORCASERIN,2020-02-13,I,Cancer risk (Belviq),https://www.fda.gov/drugs
+RANITIDINE,2020-04-01,II,NDMA impurity (Zantac),https://www.fda.gov/drugs
+VALSARTAN,2018-07-13,II,NDMA impurity,https://www.fda.gov/drugs
+LOSARTAN,2019-02-28,II,NDEA impurity,https://www.fda.gov/drugs
+METFORMIN ER,2020-05-28,II,NDMA impurity,https://www.fda.gov/drugs
+NIZATIDINE,2020-01-08,II,NDMA impurity,https://www.fda.gov/drugs
