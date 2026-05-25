@@ -19,12 +19,19 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import date
+from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
-import psycopg2
 import streamlit as st
+
+try:
+    import psycopg2
+except ImportError:  # Streamlit Cloud demo can run from CSV snapshots only.
+    psycopg2 = None
+
+APP_DIR = Path(__file__).resolve().parent
+DATA_DIR = APP_DIR / "data"
 
 # ----------------------------------------------------------------------------
 # Page config
@@ -47,8 +54,15 @@ def get_connection_params():
     )
 
 
+def use_postgres() -> bool:
+    return bool(os.getenv("POSTGRES_HOST")) and psycopg2 is not None
+
+
 @st.cache_data(ttl=300)
 def q(sql: str, **params) -> pd.DataFrame:
+    if not use_postgres():
+        return pd.DataFrame()
+
     try:
         # pandas 2.2 can mis-detect SQLAlchemy 1.4 engines in this local env,
         # so use psycopg2 directly and translate SQLAlchemy-style :name params.
@@ -58,6 +72,56 @@ def q(sql: str, **params) -> pd.DataFrame:
     except Exception as exc:
         st.error(f"Database error: {exc}")
         return pd.DataFrame()
+
+
+@st.cache_data(ttl=300)
+def csv_table(name: str) -> pd.DataFrame:
+    path = DATA_DIR / name
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path)
+
+
+def load_signals() -> pd.DataFrame:
+    if use_postgres():
+        df = q("SELECT * FROM pharma.drug_signals")
+        if not df.empty:
+            return df
+    return csv_table("signals.csv")
+
+
+def load_predictions() -> pd.DataFrame:
+    if use_postgres():
+        df = q("""
+            SELECT p.drug_name, p.reaction_term, p.recall_probability,
+                   p.predicted_date, p.actual_fda_warning_date,
+                   p.days_predicted_early, s.case_count, s.prr, s.ror
+            FROM pharma.signal_predictions p
+            LEFT JOIN pharma.drug_signals s USING (drug_name, reaction_term)
+            ORDER BY p.recall_probability DESC
+        """)
+        if not df.empty:
+            return df
+
+    preds = csv_table("predictions.csv")
+    signals = csv_table("signals.csv")
+    if preds.empty:
+        return preds
+    if signals.empty:
+        return preds
+    keep = ["drug_name", "reaction_term", "case_count", "prr", "ror"]
+    return preds.merge(signals[keep], on=["drug_name", "reaction_term"], how="left")
+
+
+def load_backtests() -> pd.DataFrame:
+    if use_postgres():
+        df = q("SELECT * FROM pharma.backtest_results ORDER BY run_date DESC LIMIT 10")
+        if not df.empty:
+            return df
+    df = csv_table("backtests.csv")
+    if not df.empty and "run_date" in df.columns:
+        df = df.sort_values("run_date", ascending=False).head(10)
+    return df
 
 
 # ----------------------------------------------------------------------------
@@ -88,24 +152,25 @@ def page_overview():
         "they become official FDA warnings."
     )
 
-    stats = q("""
-        SELECT
-          (SELECT COUNT(*) FROM pharma.drug_signals) AS signals_total,
-          (SELECT COUNT(*) FROM pharma.drug_signals WHERE signal_status='STRONG_SIGNAL') AS strong,
-          (SELECT COUNT(*) FROM pharma.drug_signals WHERE confidence='HIGH') AS high_conf,
-          (SELECT COUNT(*) FROM pharma.signal_predictions) AS preds,
-          (SELECT COUNT(*) FROM pharma.fda_official_warnings) AS known_warnings
-    """)
-    if stats.empty:
+    signals = load_signals()
+    preds = load_predictions()
+    if signals.empty and preds.empty:
         st.info("No data yet — run the pipeline once.")
         return
 
-    s = stats.iloc[0]
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total signals", f"{int(s['signals_total']):,}")
-    c2.metric("STRONG signals", f"{int(s['strong']):,}")
-    c3.metric("HIGH confidence", f"{int(s['high_conf']):,}")
-    c4.metric("ML predictions", f"{int(s['preds']):,}")
+    c1.metric("Total signals", f"{len(signals):,}")
+    c2.metric(
+        "STRONG signals",
+        f"{int((signals.get('signal_status') == 'STRONG_SIGNAL').sum()):,}"
+        if not signals.empty else "0",
+    )
+    c3.metric(
+        "HIGH confidence",
+        f"{int((signals.get('confidence') == 'HIGH').sum()):,}"
+        if not signals.empty else "0",
+    )
+    c4.metric("ML predictions", f"{len(preds):,}")
 
     st.divider()
     st.subheader("Pipeline at a glance")
@@ -130,23 +195,18 @@ def page_signal_explorer():
     status = col3.selectbox("Status", ["ANY", "STRONG_SIGNAL", "SIGNAL", "NONE"])
     conf   = col4.selectbox("Confidence", ["ANY", "HIGH", "MEDIUM", "LOW"])
 
-    sql = "SELECT * FROM pharma.drug_signals WHERE 1=1"
-    params = {}
+    df = load_signals()
     if drug:
-        sql += " AND UPPER(drug_name) LIKE :drug"
-        params["drug"] = f"%{drug.upper()}%"
+        df = df[df["drug_name"].str.upper().str.contains(drug.upper(), na=False)]
     if rx:
-        sql += " AND UPPER(reaction_term) LIKE :rx"
-        params["rx"] = f"%{rx.upper()}%"
+        df = df[df["reaction_term"].str.upper().str.contains(rx.upper(), na=False)]
     if status != "ANY":
-        sql += " AND signal_status = :status"
-        params["status"] = status
+        df = df[df["signal_status"] == status]
     if conf != "ANY":
-        sql += " AND confidence = :conf"
-        params["conf"] = conf
-    sql += " ORDER BY prr DESC NULLS LAST LIMIT 500"
+        df = df[df["confidence"] == conf]
 
-    df = q(sql, **params)
+    if not df.empty:
+        df = df.sort_values("prr", ascending=False, na_position="last").head(500)
     st.caption(f"{len(df)} rows")
     st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -166,19 +226,9 @@ def page_predictions():
     st.caption("Top XGBoost picks — most likely to become FDA warnings.")
 
     n = st.slider("Show top N", 10, 200, 50, step=10)
-    df = q(
-        """
-        SELECT p.drug_name, p.reaction_term, p.recall_probability,
-               p.predicted_date, p.actual_fda_warning_date,
-               p.days_predicted_early,
-               s.case_count, s.prr, s.ror
-        FROM   pharma.signal_predictions p
-        LEFT JOIN pharma.drug_signals s USING (drug_name, reaction_term)
-        ORDER  BY p.recall_probability DESC
-        LIMIT  :n
-        """,
-        n=n,
-    )
+    df = load_predictions()
+    if not df.empty:
+        df = df.sort_values("recall_probability", ascending=False).head(n)
     st.dataframe(df, use_container_width=True, hide_index=True)
 
     if not df.empty:
@@ -206,7 +256,7 @@ def page_predictions():
 def page_backtesting():
     st.title("Backtesting — did we catch real FDA warnings early?")
 
-    bt = q("SELECT * FROM pharma.backtest_results ORDER BY run_date DESC LIMIT 10")
+    bt = load_backtests()
     if bt.empty:
         st.info("Run `python ml/evaluate.py` first.")
         return
@@ -241,23 +291,15 @@ def page_bigdata():
         "files in the repo mirror the same schema and PRR/ROR calculations for "
         "the distributed version."
     )
-    df = q("""
-        SELECT
-          MAX(grand_total) AS grand_total,
-          COUNT(*) AS exported_signals,
-          COUNT(*) FILTER (WHERE confidence='HIGH') AS high_confidence
-        FROM pharma.drug_signals
-        LIMIT 1
-    """)
+    df = load_signals()
     if df.empty:
         st.info("No signal rows loaded yet.")
         return
 
-    row = df.iloc[0]
     c1, c2, c3 = st.columns(3)
-    c1.metric("Drug/reaction rows scanned", f"{int(row['grand_total'] or 0):,}")
-    c2.metric("Signals exported to dashboard", f"{int(row['exported_signals'] or 0):,}")
-    c3.metric("High-confidence signals", f"{int(row['high_confidence'] or 0):,}")
+    c1.metric("Drug/reaction rows scanned", f"{int(df['grand_total'].max() or 0):,}")
+    c2.metric("Signals exported to dashboard", f"{len(df):,}")
+    c3.metric("High-confidence signals", f"{int((df['confidence'] == 'HIGH').sum()):,}")
 
     st.markdown(
         "- HDFS UI: [localhost:9870](http://localhost:9870)  \n"
