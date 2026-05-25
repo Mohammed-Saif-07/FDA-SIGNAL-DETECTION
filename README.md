@@ -1,276 +1,340 @@
 # FDA Drug Safety Signal Detection at Scale
 
-A distributed pharmacovigilance pipeline that processes **10M+ FDA FAERS
-adverse-event reports** with Apache Hive, PySpark, and XGBoost to detect
-emerging drug safety signals — replicating the exact methodology FDA's
-own FAERS monitoring division uses (PRR + ROR disproportionality
-analysis), and predicting which signals will become official FDA
-warnings months before FDA announces them.
+[![Streamlit App](https://img.shields.io/badge/Live%20Demo-Streamlit-ff4b4b?logo=streamlit&logoColor=white)](https://fda-signal-detection.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Apache Spark](https://img.shields.io/badge/PySpark-3.5-orange?logo=apachespark&logoColor=white)](https://spark.apache.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-> **Headline result (backtest, 2020 cutoff):**
-> the pipeline detected **73%** of FDA drug safety warnings issued in
-> 2021–2023, on average **8.3 months** before the official announcement.
+A zero-cost pharmacovigilance pipeline that processes public FDA FAERS
+adverse-event data, computes PRR/ROR disproportionality signals, ranks
+drug-reaction pairs with XGBoost, and visualizes early-warning candidates in a
+Streamlit dashboard.
+
+The project mirrors the kind of signal detection workflow used in drug safety
+monitoring: ingest raw FAERS reports, flatten drug/reaction combinations,
+calculate statistical disproportionality, train a warning-risk model, and
+back-test detected signals against historical FDA warnings.
+
+**Live demo:** [fda-signal-detection.streamlit.app](https://fda-signal-detection.streamlit.app/)
+
+**Current backtest headline:** `Pipeline detected 14% of FDA warnings, median 8.1 months early.`
 
 ---
 
-## Why this matters
+## Dashboard Snapshots
 
-FDA receives **~2 million** adverse-event reports per year through its
-[FAERS](https://www.fda.gov/drugs/questions-and-answers-fdas-adverse-event-reporting-system-faers)
-system. Internally they use statistical signal detection (PRR, ROR) to
-spot drug–reaction pairs reported **disproportionately often** compared
-to background rates. When a signal exceeds threshold, regulators
-investigate and may issue a warning or recall — a process that takes
-months.
+### Overview
 
-This pipeline runs the same math continuously and at scale on every
-adverse event ever reported, layers an XGBoost model on top to rank
-which signals are most likely to become warnings, and back-tests its
-predictions against the historical record of actual FDA warnings.
+![Dashboard overview](docs/images/dashboard-overview.png)
+
+### Signal Explorer
+
+![Signal explorer](docs/images/signal-explorer.png)
+
+### Prediction Leaderboard
+
+![Prediction leaderboard](docs/images/prediction-leaderboard.png)
+
+### Backtesting Results
+
+![Backtesting results](docs/images/backtesting-results.png)
+
+### Big Data Stats / Deployment Mode
+
+![Big data stats](docs/images/big-data-stats.png)
+
+---
+
+## Why This Project Matters
+
+The FDA receives millions of adverse-event reports through FAERS. Safety teams
+use statistical signal detection to identify drug-reaction combinations that
+appear more frequently than expected. Those signals are investigated and may
+eventually become safety communications, label changes, boxed warnings, or
+recalls.
+
+This project recreates that workflow locally:
+
+- Uses **real public FAERS data**, not synthetic data.
+- Implements **PRR** and **ROR** disproportionality analysis.
+- Uses **PySpark** for large nested JSON ingestion, cleaning, and feature
+  engineering.
+- Keeps **Hive/HQL** implementations in the repo as distributed SQL proof.
+- Trains **XGBoost** to rank which safety signals are likely to become FDA
+  warnings.
+- Stores results in **PostgreSQL** and serves them through **Streamlit**.
+- Runs locally for **$0** with Docker Compose and no paid cloud services.
 
 ---
 
 ## Architecture
 
-```
-                            ┌─────────────────────────┐
-                            │  openFDA quarterly JSON │
-                            │  (14 files, 200 MB ea.) │
-                            └────────────┬────────────┘
-                                         │  ingestion/download_faers.py
-                                         ▼
-                            ┌─────────────────────────┐
-                            │  PySpark JSON → Parquet │
-                            │  ingestion/parse_faers  │
-                            └────────────┬────────────┘
-                                         │
-                                         ▼
-            ┌──────────────────────────────────────────────────┐
-            │  HDFS  /user/hive/warehouse/fda_pharma.db        │
-            └────────────┬─────────────────────────────────────┘
-                         │ MSCK REPAIR; partitioned by year/quarter
-                         ▼
-            ┌─────────────────────────┐     ┌─────────────────────┐
-            │ Hive (PRR + ROR HQL)    │     │ PySpark cleaning &  │
-            │ signal_detection.hql    │     │ feature engineering │
-            └────────────┬────────────┘     └───────────┬─────────┘
-                         │                              │
-                         ▼                              ▼
-                ┌──────────────┐               ┌────────────────┐
-                │ drug_signals │──────────────▶│ XGBoost model  │
-                │  (Parquet)   │               │ ml/predictor   │
-                └──────┬───────┘               └────────┬───────┘
-                       │                                │
-                       └──────────────┬─────────────────┘
-                                      ▼
-                          ┌────────────────────┐
-                          │   PostgreSQL       │
-                          │   pharma.*         │
-                          └────────┬───────────┘
-                                   │
-                ┌──────────────────┼──────────────────────┐
-                ▼                  ▼                      ▼
-         FastAPI :8000     Streamlit :8501         Airflow :8081
+```mermaid
+flowchart TD
+    A["openFDA FAERS JSON ZIP files"] --> B["download_faers.py"]
+    B --> C["parse_faers.py<br/>Nested JSON -> flattened Parquet"]
+    C --> D["data_cleaning.py<br/>dedupe + standardize"]
+    D --> E["feature_engineering.py<br/>PRR, ROR, chi-square, severity features"]
+    E --> F["train_model.py<br/>XGBoost signal -> warning model"]
+    F --> G["predictor.py<br/>rank drug/reaction warning risk"]
+    E --> H["evaluate.py<br/>backtest vs FDA warnings"]
+    G --> I["PostgreSQL<br/>pharma.drug_signals + predictions"]
+    H --> I
+    I --> J["Streamlit Dashboard"]
+    I --> K["FastAPI"]
+
+    C -. local full stack .-> L["HDFS"]
+    L -. HQL proof .-> M["Apache Hive<br/>signal_detection.hql"]
+    M -. PRR/ROR tables .-> I
+    N["Airflow DAG"] -. quarterly orchestration .-> B
 ```
 
-| Layer            | Tech                                                    |
-|------------------|---------------------------------------------------------|
-| Storage          | HDFS (Hadoop 3.2)                                       |
-| SQL              | Apache Hive 2.3 — partitioned, vectorised, CBO          |
-| Distributed compute | Apache Spark 3.5 (PySpark)                           |
-| ML               | XGBoost 2.0                                             |
-| Orchestration    | Apache Airflow 2.9 (`@quarterly` DAG)                   |
-| Results store    | PostgreSQL 15                                           |
-| API              | FastAPI                                                 |
-| Dashboard        | Streamlit + Plotly                                      |
-| Containerisation | Docker Compose                                          |
-| **Cost**         | **$0** — everything FREE / local                        |
+### Stack
+
+| Layer | Technology |
+| --- | --- |
+| Data source | FDA FAERS / openFDA public adverse-event files |
+| Local storage | Parquet under `data/processed/` |
+| Distributed storage design | HDFS via Docker Compose |
+| Big data SQL | Apache Hive + HQL |
+| Distributed compute | Apache Spark / PySpark |
+| ML | XGBoost + scikit-learn |
+| Results database | PostgreSQL |
+| Orchestration | Airflow DAG |
+| API | FastAPI |
+| Dashboard | Streamlit + Plotly |
+| Deployment | Streamlit Cloud snapshot demo |
 
 ---
 
-## Quick start
+## Cloud Demo vs Local Full Stack
 
-### 1. Bring up the stack
-```bash
-git clone <this repo>
-cd fda-signal-detection
-cp .env.example .env
-docker compose up -d
-```
-That brings up:
-* HDFS:        http://localhost:9870
-* Spark:       http://localhost:8080
-* Airflow:     http://localhost:8081  (admin / admin)
-* Streamlit:   http://localhost:8501
-* FastAPI:     http://localhost:8000/docs
-* PostgreSQL:  localhost:5432  (fda / fda)
+The public Streamlit app is a **portfolio demo**. Streamlit Cloud cannot expose
+my local Docker network, HDFS NameNode, Spark UI, Airflow UI, FastAPI server, or
+PostgreSQL container. For that reason, the deployed dashboard reads exported
+CSV snapshots from:
 
-### 2. Download a couple of quarters (smoke test)
-```bash
-python ingestion/download_faers.py --quarter 2024q1
-python ingestion/download_faers.py --quarter 2024q2
-```
-or the full archive (~30 GB):
-```bash
-python ingestion/download_faers.py            # all 14 files
+```text
+dashboard/data/signals.csv
+dashboard/data/predictions.csv
+dashboard/data/backtests.csv
 ```
 
-### 3. Parse + load + analyse
-```bash
-spark-submit ingestion/parse_faers.py
-python      ingestion/load_to_hdfs.py
-beeline -u jdbc:hive2://localhost:10000 -f hive/create_tables.hql
-beeline -u jdbc:hive2://localhost:10000 -f hive/signal_detection.hql
-beeline -u jdbc:hive2://localhost:10000 -f hive/signal_trends.hql
-```
-
-### 4. Build features + train + back-test
-```bash
-spark-submit spark/feature_engineering.py
-python ml/train_model.py --train-cutoff 2020-12-31
-python ml/predictor.py
-python ml/evaluate.py
-```
-
-### 5. Or just trigger the Airflow DAG
-```bash
-# in the Airflow UI, unpause `fda_signal_detection` and Trigger DAG
-```
+On my Mac, the full pipeline runs locally with Docker/PySpark/PostgreSQL and can
+regenerate those dashboard snapshots from real FAERS data.
 
 ---
 
-## The core algorithm — PRR and ROR
+## Core Signal Detection Math
 
-Built directly in HQL (`hive/signal_detection.hql`) over the full
-**10M+** adverse-event fact table.
+For every `drug_name` x `reaction_term` pair, the pipeline computes:
 
-For each drug *D* × reaction *R* the 2×2 contingency table is:
+```text
+PRR = (drug_reaction_count / drug_total) / (reaction_total / grand_total)
 
-|              | Reaction R | Other reactions |
-|--------------|------------|-----------------|
-| **Drug D**       | `a`        | `b`             |
-| **Other drugs**  | `c`        | `d`             |
-
-```
-PRR = (a / (a + b)) / (c / (c + d))
-ROR = (a * d)  /  (b * c)
-χ²  = (|a·d − b·c| − N/2)²  · N  /  ((a+b)·(c+d)·(a+c)·(b+d))
+ROR = (drug_reaction_count * (grand_total - reaction_total))
+      / ((drug_total - drug_reaction_count) * reaction_total)
 ```
 
-Standard pharmacovigilance thresholds:
+Signal thresholds:
 
-* `PRR > 2.0  AND  cases ≥ 3`  → SIGNAL
-* `PRR > 2.0  AND  ROR > 2.0  AND  χ² > 4`  → STRONG SIGNAL
-* `PRR > 4    AND  ROR > 4    AND  cases ≥ 10` → HIGH confidence
+```text
+PRR > 2.0 and case_count >= 3  -> signal
+ROR > 2.0 and case_count >= 3  -> confirmed signal
+PRR and ROR both high          -> high-confidence signal
+```
+
+The same PRR/ROR logic is represented in both:
+
+- `hive/signal_detection.hql`
+- `spark/feature_engineering.py`
 
 ---
 
-## ML model — XGBoost "signal → recall"
+## Current Results
 
-`ml/train_model.py` builds a binary classifier:
+From the local 2020-cutoff backtest:
 
-* **Target:** did this drug+reaction pair eventually receive an official
-  FDA warning?  (joined from `data/reference/fda_warnings.csv`)
-* **Features** (PySpark-engineered):
-  `PRR, ROR, prr_chi_square, case_count, case_count_growth_qoq,
-  serious_ratio, death_ratio, hosp_ratio, countries_count, age_mean,
-  age_std, sex_female_ratio, days_since_first_report,
-  n_concurrent_signals`
-* **Imbalance handling:** 5:1 random under-sampling of negatives.
-* **Eval:** AUC-ROC, average precision, precision@100, recall on
-  out-of-time warnings, median months early.
+| Metric | Value |
+| --- | ---: |
+| Future FDA warnings evaluated | 7 |
+| Warnings caught | 1 |
+| Recall | 14.3% |
+| Median lead time | 244 days |
+| Median months early | 8.1 months |
+| Precision @ 100 | 2.0% |
 
----
+Generated report:
 
-## Back-testing — the resume bullet
-
-```bash
-python ml/evaluate.py --cutoff 2020-12-31
+```text
+data/processed/backtest_report.json
 ```
 
-Outputs a JSON report at `data/processed/backtest_report.json` and
-writes the headline to `pharma.backtest_results` so the Streamlit
-"Backtesting" page picks it up.
+Headline:
 
-Example output:
-```
-HEADLINE: Pipeline detected 73% of FDA warnings, median 8.3 months early.
+```text
+Pipeline detected 14% of FDA warnings, median 8.1 months early.
 ```
 
 ---
 
-## Resume bullets
+## Repository Layout
 
-* **Primary:** *“Built a distributed pharmacovigilance pipeline using
-  Apache Hive/HQL and PySpark to process 10M+ FDA adverse-event reports,
-  implementing PRR and ROR disproportionality analysis — the exact
-  methodology used by FDA's FAERS monitoring division — detecting drug
-  safety signals an average of **8 months before** official FDA
-  warnings.”*
-
-* **Secondary:** *“Trained an XGBoost classifier on engineered PySpark
-  features to predict which pharmacovigilance signals become FDA
-  recalls, achieving **73% recall** on a held-out historical validation
-  set across 4 years of FDA warning data.”*
-
----
-
-## Project layout
-
-```
+```text
 fda-signal-detection/
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example
-├── data/
-│   ├── raw/                      # downloaded FAERS *.json.zip
-│   ├── processed/                # parquet output (gitignored)
-│   └── reference/
-│       ├── fda_warnings.csv      # ground-truth labels
-│       └── drug_recalls.csv
+├── streamlit_app.py              # Streamlit Cloud entrypoint
+├── docker-compose.yml            # HDFS, Hive, Spark, Postgres, Airflow, API, dashboard
+├── Makefile                      # local workflow shortcuts
+├── requirements.txt              # Streamlit Cloud dependencies
+├── requirements_local.txt        # local development dependencies
 ├── ingestion/
-│   ├── download_faers.py
-│   ├── parse_faers.py
-│   └── load_to_hdfs.py
+│   ├── download_faers.py         # download FAERS files from openFDA
+│   ├── parse_faers.py            # nested JSON -> Parquet
+│   └── load_to_hdfs.py           # push local Parquet to HDFS
 ├── hive/
 │   ├── create_tables.hql
 │   ├── partitioned_tables.hql
-│   ├── signal_detection.hql      # PRR + ROR — main analysis
+│   ├── signal_detection.hql      # PRR/ROR Hive implementation
 │   └── signal_trends.hql
 ├── spark/
 │   ├── data_cleaning.py
-│   ├── feature_engineering.py
+│   ├── feature_engineering.py    # PRR/ROR + ML features in PySpark
 │   └── batch_processing.py
 ├── ml/
 │   ├── train_model.py
 │   ├── predictor.py
 │   ├── evaluate.py
-│   └── models/                   # saved XGBoost artefacts
+│   └── load_dashboard_data.py
 ├── pipeline/
-│   └── airflow_dag.py            # quarterly orchestration
+│   └── airflow_dag.py
 ├── api/
-│   ├── main.py                   # FastAPI
-│   └── report.py                 # PDF generator
+│   ├── main.py
+│   └── report.py
 ├── dashboard/
-│   └── app.py                    # Streamlit
-├── sql/init.sql                  # PostgreSQL schema
-└── notebooks/analysis.ipynb
+│   ├── app.py
+│   ├── export_data.py
+│   └── data/                     # deployed dashboard snapshots
+├── sql/
+│   └── init.sql                  # PostgreSQL schema
+├── data/
+│   └── reference/
+│       ├── fda_warnings.csv
+│       └── drug_recalls.csv
+└── docs/images/                  # README screenshots
 ```
 
 ---
 
-## Data source
+## Run the Streamlit Demo Locally
 
-* Bulk downloads: https://download.open.fda.gov/drug/event/
-* Manifest used by `download_faers.py`: https://api.fda.gov/download.json
-* Updated quarterly; ~2 M reports/year; ~10 M total.
+```bash
+git clone https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION.git
+cd FDA-SIGNAL-DETECTION
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
 
-All data is 100% public domain.
+This runs the same snapshot mode used by Streamlit Cloud.
 
 ---
 
-## Built by
+## Run the Local PySpark Backtest
 
-**Saif Mohammed** — MSCSDS, Seattle University, United States
-[smohammed8@seattleu.edu](mailto:smohammed8@seattleu.edu) ·
-[github.com/Mohammed-Saif-07](https://github.com/Mohammed-Saif-07)
+Recommended local setup uses a conda environment with Python 3.11:
+
+```bash
+conda create -n fda python=3.11 -y
+conda activate fda
+pip install -r requirements_local.txt
+```
+
+Run a constrained 2020 backtest sample:
+
+```bash
+make local-backtest-2020-wide LIMIT=20 BACKTEST_CUTOFF=2020-12-31
+```
+
+Or run the final stages if cleaned Parquet already exists:
+
+```bash
+make local-finish-2020
+```
+
+Export dashboard tables to PostgreSQL:
+
+```bash
+python ml/load_dashboard_data.py --signals-top-n 10000 --predictions-top-n 10000
+```
+
+Start the dashboard locally:
+
+```bash
+streamlit run dashboard/app.py
+```
+
+---
+
+## Run Docker Services Locally
+
+The full Docker Compose stack is included for local demonstration of the
+distributed architecture:
+
+```bash
+docker compose up -d postgres
+```
+
+For the full stack:
+
+```bash
+docker compose up -d
+```
+
+Local service URLs:
+
+| Service | URL |
+| --- | --- |
+| Streamlit | http://localhost:8501 |
+| FastAPI docs | http://localhost:8000/docs |
+| PostgreSQL | `localhost:5432` |
+| HDFS NameNode UI | http://localhost:9870 |
+| Spark UI | http://localhost:8080 |
+| Airflow | http://localhost:8081 |
+| HiveServer2 | `localhost:10000` |
+
+These links are local-only and will not work from the public Streamlit Cloud
+deployment.
+
+---
+
+## Notes on Data Size
+
+FAERS is large and updated quarterly. The repo does not commit raw FAERS ZIPs or
+large generated Parquet directories. The deployed dashboard uses compact
+snapshot CSV files, while the local pipeline can regenerate them from downloaded
+FAERS data.
+
+The current dashboard snapshot summarizes:
+
+- `20,864,371` scanned drug/reaction rows
+- `2,000` exported signal rows
+- `2,000` exported prediction rows
+- `4` recent backtest records
+
+---
+
+## Resume Pitch
+
+> Built a local big-data pharmacovigilance pipeline that processes FDA FAERS
+> adverse-event reports, implements PRR/ROR disproportionality analysis in
+> Hive/HQL and PySpark, trains an XGBoost model to rank warning risk, stores
+> outputs in PostgreSQL, and deploys an interactive Streamlit dashboard showing
+> drug safety signals and backtest performance.
+
+---
+
+## Author
+
+**Saif Mohammed**  
+MSCSDS, Seattle University  
+GitHub: [Mohammed-Saif-07](https://github.com/Mohammed-Saif-07)
+
