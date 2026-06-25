@@ -322,16 +322,6 @@ The current dashboard snapshot summarizes:
 
 ---
 
-## Resume Pitch
-
-> Built a local big-data pharmacovigilance pipeline that processes FDA FAERS
-> adverse-event reports, implements PRR/ROR disproportionality analysis in
-> Hive/HQL and PySpark, trains an XGBoost model to rank warning risk, stores
-> outputs in PostgreSQL, and deploys an interactive Streamlit dashboard showing
-> drug safety signals and backtest performance.
-
----
-
 ## Author
 
 **Saif Mohammed**  
