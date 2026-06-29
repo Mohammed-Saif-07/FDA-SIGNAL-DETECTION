@@ -17,7 +17,7 @@ back-test detected signals against historical FDA warnings.
 
 **Live demo:** [fda-signal-detection.streamlit.app](https://fda-signal-detection.streamlit.app/)
 
-**Current backtest headline:** `Pipeline detected 14% of FDA warnings, median 8.1 months early.`
+**Current backtest headline:** `Pipeline detected 14% of FDA warnings, median 17.3 months early.`
 
 ---
 
@@ -153,16 +153,21 @@ The same PRR/ROR logic is represented in both:
 
 ## Current Results
 
-From the local 2020-cutoff backtest:
+From the local `2020-12-31` cutoff backtest:
 
 | Metric | Value |
 | --- | ---: |
 | Future FDA warnings evaluated | 7 |
 | Warnings caught | 1 |
 | Recall | 14.3% |
-| Median lead time | 244 days |
-| Median months early | 8.1 months |
+| Median signal-detection lead time | 519 days |
+| Median months early | 17.3 months |
 | Precision @ 100 | 2.0% |
+
+The detected case was `UPADACITINIB` + `MYOCARDIAL INFARCTION`, with an FDA
+warning date of `2021-09-01`. Its PRR/ROR signal first crossed threshold at
+the `2020-03-31` quarter end, giving a 519-day, or 17.3-month, signal lead
+time.
 
 Generated report:
 
@@ -173,8 +178,77 @@ data/processed/backtest_report.json
 Headline:
 
 ```text
-Pipeline detected 14% of FDA warnings, median 8.1 months early.
+Pipeline detected 14% of FDA warnings, median 17.3 months early.
 ```
+
+This is intentionally reported as a modest, reproducible result. The project
+does not claim 73% recall in its current state.
+
+---
+
+## Research Evaluation
+
+The repository includes a research-style evaluation pass that compares multiple
+ranking baselines and threshold rules across four time cutoffs:
+
+- `2018-12-31`
+- `2019-12-31`
+- `2020-12-31`
+- `2021-12-31`
+
+Methods evaluated:
+
+- `case_count`
+- `prr`
+- `ror`
+- `prr_ror`
+- `prr_ror_chi_square`
+- `xgboost`
+- `prr_ror_threshold`
+- `xgboost_threshold_0_5`
+
+Main `2020-12-31` results:
+
+| Method | Evaluation | Future Warnings | Caught | Recall | Precision | Median Lead Time |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0002% | 519 days |
+| XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 244 days |
+| XGBoost top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
+| PRR/ROR top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
+
+Generate the research artifacts:
+
+```bash
+make research-eval
+```
+
+Outputs:
+
+```text
+docs/research_report.md
+docs/warning_reference_data_dictionary.md
+data/processed/research_eval_summary.csv
+data/processed/research_eval_summary.json
+data/processed/temporal_warning_signals.csv
+data/processed/case_studies.csv
+data/processed/missed_warnings.csv
+data/processed/false_positive_analysis.csv
+```
+
+The research report is written as an applied systems/capstone paper draft:
+
+- reproducible research question
+- method and architecture
+- dataset description
+- evaluation design
+- baseline comparison
+- case study
+- limitations
+- reproducibility commands
+
+Key limitation: FAERS disproportionality is signal detection, not causal proof.
+The current warning reference set is also small, with 56 curated rows and only
+7 warnings after the 2020 cutoff.
 
 ---
 
@@ -204,7 +278,12 @@ fda-signal-detection/
 │   ├── train_model.py
 │   ├── predictor.py
 │   ├── evaluate.py
+│   ├── research_evaluate.py      # multi-cutoff research evaluation
 │   └── load_dashboard_data.py
+├── scripts/
+│   ├── smoke_local.sh
+│   ├── smoke_docker.sh
+│   └── research_eval.sh
 ├── pipeline/
 │   └── airflow_dag.py
 ├── api/
@@ -260,6 +339,12 @@ Or run the final stages if cleaned Parquet already exists:
 make local-finish-2020
 ```
 
+Run local smoke checks:
+
+```bash
+make smoke-local
+```
+
 Export dashboard tables to PostgreSQL:
 
 ```bash
@@ -289,6 +374,12 @@ For the full stack:
 docker compose up -d
 ```
 
+Smoke test Docker services:
+
+```bash
+make smoke-docker
+```
+
 Local service URLs:
 
 | Service | URL |
@@ -303,6 +394,10 @@ Local service URLs:
 
 These links are local-only and will not work from the public Streamlit Cloud
 deployment.
+
+In Streamlit Cloud, the dashboard is expected to show exported CSV snapshots
+only. On the Mac local environment, Docker Compose runs PostgreSQL, FastAPI,
+Streamlit, HDFS, Hive, Spark, and Airflow together.
 
 ---
 
@@ -320,6 +415,37 @@ The current dashboard snapshot summarizes:
 - `2,000` exported prediction rows
 - `4` recent backtest records
 
+The local processed feature table used for research evaluation contains
+`4,286,074` drug/reaction feature rows.
+
+---
+
+## Research-Paper Readiness
+
+Current status: suitable for a reproducible applied systems paper, portfolio
+paper, or graduate capstone report.
+
+What is already defensible:
+
+- real FAERS-derived data pipeline
+- reproducible PRR/ROR formulas
+- PySpark feature engineering
+- Hive/HQL implementation of the core signal math
+- Docker Compose demonstration of the distributed architecture
+- PostgreSQL/API/dashboard serving layer
+- honest backtest against curated FDA warning references
+- explicit false-positive and missed-warning outputs
+
+What must improve before claiming strong predictive performance:
+
+- expand the FDA warning reference set beyond the current 56 curated rows
+- extend quarterly first-detected dates from warning-pair validation to every
+  candidate signal
+- load the Docker Hive tables with a larger real Parquet sample
+- improve terminology matching between FAERS MedDRA terms and warning labels
+- report confidence intervals or bootstrap uncertainty for recall/precision
+- evaluate on more cutoffs and larger historical windows
+
 ---
 
 ## Author
@@ -327,4 +453,3 @@ The current dashboard snapshot summarizes:
 **Saif Mohammed**  
 MSCSDS, Seattle University  
 GitHub: [Mohammed-Saif-07](https://github.com/Mohammed-Saif-07)
-

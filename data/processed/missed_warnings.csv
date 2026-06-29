@@ -1,0 +1,7 @@
+drug_name,reaction_term,warning_date,warning_type,recall_date,source_url,notes,pair_key,cutoff,likely_reason
+TOFACITINIB,MYOCARDIAL INFARCTION,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Xeljanz CV BBW,TOFACITINIB||MYOCARDIAL INFARCTION,2020-12-31,Present in feature table but did not rank/threshold high enough for this evaluation.
+TOFACITINIB,MALIGNANT NEOPLASM,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Xeljanz cancer BBW,TOFACITINIB||MALIGNANT NEOPLASM,2020-12-31,No exact normalized drug/reaction match in processed feature table.
+BARICITINIB,VENOUS THROMBOEMBOLISM,2021-09-01,BOXED_WARNING,,https://www.fda.gov/drugs,Olumiant BBW,BARICITINIB||VENOUS THROMBOEMBOLISM,2020-12-31,No exact normalized drug/reaction match in processed feature table.
+SEMAGLUTIDE,ILEUS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,GLP-1 ileus warning,SEMAGLUTIDE||ILEUS,2020-12-31,Present in feature table but did not rank/threshold high enough for this evaluation.
+SEMAGLUTIDE,GASTROPARESIS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,GLP-1 gastroparesis warning,SEMAGLUTIDE||GASTROPARESIS,2020-12-31,No exact normalized drug/reaction match in processed feature table.
+TIRZEPATIDE,GASTROPARESIS,2023-09-28,SAFETY_COMMUNICATION,,https://www.fda.gov/drugs,Mounjaro gastroparesis warning,TIRZEPATIDE||GASTROPARESIS,2020-12-31,No exact normalized drug/reaction match in processed feature table.

@@ -2,7 +2,7 @@
 # FDA Drug Safety Signal Detection — convenience targets
 # =====================================================================
 
-.PHONY: help up down logs ps download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
+.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
 
 CONDA_RUN ?= conda run -n fda
 SPARK_HOME ?= /opt/anaconda3/envs/fda/lib/python3.11/site-packages/pyspark
@@ -29,6 +29,25 @@ logs:           ## Tail Airflow + Spark logs
 
 ps:             ## Show running services
 	docker compose ps
+
+hive-init:      ## Initialize Hive metastore schema after a fresh Docker volume
+	docker compose up -d hive-metastore-db namenode datanode
+	sleep 8
+	docker compose run --rm --no-deps hive-metastore /opt/hive/bin/schematool -dbType postgres -initSchema
+	docker compose up -d hive-metastore hive-server
+
+docker-smoke:   ## Smoke-test Docker API, HDFS, Hive schema, and Hive PRR/ROR HQL
+	./scripts/smoke_docker.sh
+
+smoke-docker: docker-smoke ## Alias for Docker smoke test
+
+smoke-local:   ## Smoke-test local conda dependencies and backtest
+	./scripts/smoke_local.sh
+
+research-eval: ## Run paper-style baseline, case-study, and false-positive evaluation
+	./scripts/research_eval.sh
+
+report: research-eval ## Regenerate research evaluation artifacts used by docs/research_report.md
 
 # ---------------------- Smoke-test pipeline -------------------
 download:       ## Download a single quarter (smoke test)

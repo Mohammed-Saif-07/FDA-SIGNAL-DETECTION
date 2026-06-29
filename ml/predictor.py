@@ -76,12 +76,15 @@ def main() -> int:
     df["predicted_date"]     = date.today()
     df["model_version"]      = "xgb-v1"
 
-    out = df[[
+    out_cols = [
         "drug_name", "reaction_term",
         "recall_probability", "predicted_class",
         "predicted_date",
         "warning_date", "model_version",
-    ]].copy()
+    ]
+    if "signal_first_detected_date" in df.columns:
+        out_cols.insert(2, "signal_first_detected_date")
+    out = df[out_cols].copy()
     out.rename(columns={"warning_date": "actual_fda_warning_date"}, inplace=True)
 
     # how many days early (negative = late)

@@ -1,0 +1,87 @@
+{
+  "run_date": "2026-06-28",
+  "features_rows": 4286074,
+  "warning_reference_rows": 56,
+  "predictions_rows": 4286074,
+  "cutoffs": [
+    "2018-12-31",
+    "2019-12-31",
+    "2020-12-31",
+    "2021-12-31"
+  ],
+  "k_values": [
+    50,
+    100
+  ],
+  "outputs": {
+    "temporal_warning_signals_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/temporal_warning_signals.csv",
+    "summary_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/research_eval_summary.csv",
+    "case_studies_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/case_studies.csv",
+    "missed_warnings_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/missed_warnings.csv",
+    "false_positive_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/false_positive_analysis.csv"
+  },
+  "primary_2020_result": [
+    {
+      "cutoff": "2020-12-31",
+      "method": "prr_ror",
+      "evaluation_type": "top_k",
+      "k": 100,
+      "future_warnings": 7,
+      "warnings_caught": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "median_days_early": NaN,
+      "median_months_early": NaN,
+      "lead_time_basis": "cutoff",
+      "ranked_candidates": 505220
+    },
+    {
+      "cutoff": "2020-12-31",
+      "method": "xgboost",
+      "evaluation_type": "top_k",
+      "k": 100,
+      "future_warnings": 7,
+      "warnings_caught": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "median_days_early": NaN,
+      "median_months_early": NaN,
+      "lead_time_basis": "cutoff",
+      "ranked_candidates": 4286074
+    },
+    {
+      "cutoff": "2020-12-31",
+      "method": "prr_ror_threshold",
+      "evaluation_type": "threshold",
+      "k": "threshold",
+      "future_warnings": 7,
+      "warnings_caught": 1,
+      "recall": 0.14285714285714285,
+      "precision": 1.9793357349273584e-06,
+      "median_days_early": 519.0,
+      "median_months_early": 17.3,
+      "lead_time_basis": "signal_first_detected_date",
+      "ranked_candidates": 505220
+    },
+    {
+      "cutoff": "2020-12-31",
+      "method": "xgboost_threshold_0_5",
+      "evaluation_type": "threshold",
+      "k": "threshold",
+      "future_warnings": 7,
+      "warnings_caught": 1,
+      "recall": 0.14285714285714285,
+      "precision": 8.841263947093876e-06,
+      "median_days_early": 244.0,
+      "median_months_early": 8.1,
+      "lead_time_basis": "cutoff",
+      "ranked_candidates": 113106
+    }
+  ],
+  "limitations": [
+    "FAERS disproportionality is signal detection, not causal inference.",
+    "Lead time uses signal_first_detected_date when available; older feature files fall back to the evaluation cutoff.",
+    "The warning reference file is hand-curated and should be expanded with more verified FDA sources.",
+    "The Docker Hive smoke validates HQL execution, but the current Docker Hive table is not loaded with the full FAERS Parquet sample."
+  ]
+}

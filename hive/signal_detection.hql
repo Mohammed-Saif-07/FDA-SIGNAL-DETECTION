@@ -23,11 +23,19 @@ USE fda_pharma;
 -- Performance hints
 SET hive.exec.parallel = true;
 SET hive.exec.dynamic.partition.mode = nonstrict;
-SET hive.vectorized.execution.enabled = true;
-SET hive.vectorized.execution.reduce.enabled = true;
+SET hive.mapred.mode = nonstrict;
+SET hive.strict.checks.cartesian.product = false;
+SET hive.vectorized.execution.enabled = false;
+SET hive.vectorized.execution.reduce.enabled = false;
 SET hive.cbo.enable = true;
 SET hive.compute.query.using.stats = true;
 SET hive.auto.convert.join = true;
+SET mapreduce.framework.name = local;
+SET hive.exec.mode.local.auto = true;
+SET mapreduce.task.io.sort.mb = 16;
+SET mapreduce.map.java.opts = -Xmx512m;
+SET mapreduce.reduce.java.opts = -Xmx512m;
+SET mapred.child.java.opts = -Xmx512m;
 SET mapreduce.input.fileinputformat.split.maxsize = 268435456;  -- 256 MB
 
 -- =====================================================================
@@ -42,8 +50,8 @@ SET hivevar:CHI2_THRESHOLD = 4.0;
 -- Step 1: per-drug × per-reaction × per-margin counts
 --         (only consider drugs flagged as SUSPECT — drug_role='1')
 -- =====================================================================
-DROP TABLE IF EXISTS _dr_pair_counts;
-CREATE TABLE _dr_pair_counts STORED AS PARQUET AS
+DROP TABLE IF EXISTS tmp_dr_pair_counts;
+CREATE TABLE tmp_dr_pair_counts STORED AS PARQUET AS
 SELECT
     drug_name,
     reaction_term,
@@ -60,21 +68,21 @@ WHERE drug_name IS NOT NULL
   AND (drug_role = '1' OR drug_role IS NULL)        -- suspect drug (or unknown role)
 GROUP BY drug_name, reaction_term;
 
-DROP TABLE IF EXISTS _drug_totals;
-CREATE TABLE _drug_totals STORED AS PARQUET AS
+DROP TABLE IF EXISTS tmp_drug_totals;
+CREATE TABLE tmp_drug_totals STORED AS PARQUET AS
 SELECT drug_name, SUM(case_count) AS drug_total
-FROM   _dr_pair_counts
+FROM   tmp_dr_pair_counts
 GROUP  BY drug_name;
 
-DROP TABLE IF EXISTS _reaction_totals;
-CREATE TABLE _reaction_totals STORED AS PARQUET AS
+DROP TABLE IF EXISTS tmp_reaction_totals;
+CREATE TABLE tmp_reaction_totals STORED AS PARQUET AS
 SELECT reaction_term, SUM(case_count) AS reaction_total
-FROM   _dr_pair_counts
+FROM   tmp_dr_pair_counts
 GROUP  BY reaction_term;
 
-DROP TABLE IF EXISTS _grand_total;
-CREATE TABLE _grand_total STORED AS PARQUET AS
-SELECT SUM(case_count) AS grand_total FROM _dr_pair_counts;
+DROP TABLE IF EXISTS tmp_grand_total;
+CREATE TABLE tmp_grand_total STORED AS PARQUET AS
+SELECT SUM(case_count) AS grand_total FROM tmp_dr_pair_counts;
 
 -- =====================================================================
 -- Step 2: compute PRR / ROR / chi-square for every drug+reaction pair
@@ -96,10 +104,10 @@ WITH pair_with_margins AS (
         p.death_cases,
         p.countries_count,
         p.first_seen
-    FROM       _dr_pair_counts  p
-    JOIN       _drug_totals     dt ON dt.drug_name      = p.drug_name
-    JOIN       _reaction_totals rt ON rt.reaction_term  = p.reaction_term
-    CROSS JOIN _grand_total     gt
+    FROM       tmp_dr_pair_counts  p
+    JOIN       tmp_drug_totals     dt ON dt.drug_name      = p.drug_name
+    JOIN       tmp_reaction_totals rt ON rt.reaction_term  = p.reaction_term
+    CROSS JOIN tmp_grand_total     gt
 ),
 calc AS (
     SELECT
@@ -177,10 +185,10 @@ FROM   calc;
 -- =====================================================================
 -- Step 3: cleanup intermediate tables
 -- =====================================================================
-DROP TABLE IF EXISTS _dr_pair_counts;
-DROP TABLE IF EXISTS _drug_totals;
-DROP TABLE IF EXISTS _reaction_totals;
-DROP TABLE IF EXISTS _grand_total;
+DROP TABLE IF EXISTS tmp_dr_pair_counts;
+DROP TABLE IF EXISTS tmp_drug_totals;
+DROP TABLE IF EXISTS tmp_reaction_totals;
+DROP TABLE IF EXISTS tmp_grand_total;
 
 -- =====================================================================
 -- Step 4: top 50 strongest emerging signals (resume-impressive output)

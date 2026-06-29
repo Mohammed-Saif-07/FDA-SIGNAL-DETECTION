@@ -13,6 +13,7 @@ Or via docker-compose:
 from __future__ import annotations
 
 import os
+from datetime import date
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -58,7 +59,7 @@ class Signal(BaseModel):
     serious_ratio: Optional[float] = None
     death_ratio: Optional[float] = None
     countries_count: Optional[int] = None
-    first_detected_date: Optional[str] = None
+    first_detected_date: Optional[date] = None
 
 
 class Prediction(BaseModel):
@@ -66,14 +67,14 @@ class Prediction(BaseModel):
     reaction_term: str
     recall_probability: float
     predicted_class: int
-    predicted_date: Optional[str] = None
-    actual_fda_warning_date: Optional[str] = None
+    predicted_date: Optional[date] = None
+    actual_fda_warning_date: Optional[date] = None
     days_predicted_early: Optional[int] = None
 
 
 class BacktestSummary(BaseModel):
     headline: str
-    train_cutoff_date: Optional[str] = None
+    train_cutoff_date: Optional[date] = None
     recall_overall: Optional[float] = None
     precision_at_100: Optional[float] = None
     median_days_early: Optional[int] = None
@@ -169,7 +170,7 @@ def backtest_summary():
         return BacktestSummary(headline="No back-test run yet")
     return BacktestSummary(
         headline=row["notes"] or "",
-        train_cutoff_date=str(row["train_cutoff_date"]) if row["train_cutoff_date"] else None,
+        train_cutoff_date=row["train_cutoff_date"],
         recall_overall=float(row["recall_overall"]) if row["recall_overall"] else None,
         precision_at_100=float(row["precision_at_100"]) if row["precision_at_100"] else None,
         median_days_early=row["median_days_early"],

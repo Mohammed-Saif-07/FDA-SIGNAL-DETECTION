@@ -1,13 +1,15 @@
 {
-  "run_date": "2026-05-24",
+  "run_date": "2026-06-28",
   "train_cutoff": "2020-12-31",
   "future_warnings_count": 7,
   "rule_recall": 0.14285714285714285,
   "rule_warnings_caught": 1,
-  "rule_median_days_early": 244,
+  "rule_median_days_early": 519,
   "ml_recall": 0.14285714285714285,
+  "ml_median_days_early": 244,
   "precision_at_100": 0.02,
-  "median_days_early": 244,
-  "median_months_early": 8.1,
-  "headline": "Pipeline detected 14% of FDA warnings, median 8.1 months early."
+  "median_days_early": 519,
+  "median_months_early": 17.3,
+  "lead_time_basis": "signal_first_detected_date",
+  "headline": "Pipeline detected 14% of FDA warnings, median 17.3 months early."
 }

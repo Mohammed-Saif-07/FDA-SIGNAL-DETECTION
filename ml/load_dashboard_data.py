@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow.parquet as pq
 import psycopg2
 from psycopg2.extras import execute_values
 
@@ -57,6 +58,9 @@ def load_signals(path: Path, top_n: int) -> pd.DataFrame:
         "ror",
         "prr_chi_square",
     ]
+    optional_cols = ["signal_first_detected_date"]
+    available = pq.ParquetDataset(path).schema.names
+    cols.extend([col for col in optional_cols if col in available])
     df = pd.read_parquet(path, columns=cols)
 
     signals = df[
@@ -83,7 +87,13 @@ def load_signals(path: Path, top_n: int) -> pd.DataFrame:
         else ("MEDIUM" if r["case_count"] >= 5 else "LOW"),
         axis=1,
     )
-    signals["first_detected_date"] = date.today()
+    if "signal_first_detected_date" in signals.columns:
+        signals["first_detected_date"] = pd.to_datetime(
+            signals["signal_first_detected_date"], errors="coerce"
+        ).dt.date
+        signals["first_detected_date"] = signals["first_detected_date"].fillna(date.today())
+    else:
+        signals["first_detected_date"] = date.today()
     signals["last_updated"] = pd.Timestamp.utcnow().to_pydatetime()
 
     out_cols = [
