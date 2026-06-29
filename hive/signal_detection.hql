@@ -45,6 +45,7 @@ SET hivevar:PRR_THRESHOLD = 2.0;
 SET hivevar:ROR_THRESHOLD = 2.0;
 SET hivevar:MIN_CASES     = 3;
 SET hivevar:CHI2_THRESHOLD = 4.0;
+SET hivevar:CHI2_CAP = 1000000000.0;
 
 -- =====================================================================
 -- Step 1: per-drug × per-reaction × per-margin counts
@@ -131,11 +132,17 @@ calc AS (
             ELSE (CAST(a AS DOUBLE) * d) / (CAST(b AS DOUBLE) * c)
         END                                                 AS ror,
 
-        /*  Yates-corrected chi-square                */
+        /*  Yates-corrected chi-square.
+            Cast all contingency-table cells before multiplication to avoid
+            integer overflow on large FAERS tables. */
         CASE
             WHEN (a + b) = 0 OR (c + d) = 0 OR (a + c) = 0 OR (b + d) = 0 THEN NULL
             ELSE (
-                POWER(ABS(CAST(a AS DOUBLE) * d - CAST(b AS DOUBLE) * c) - (grand_total / 2.0), 2)
+                POWER(
+                    ABS(CAST(a AS DOUBLE) * CAST(d AS DOUBLE) - CAST(b AS DOUBLE) * CAST(c AS DOUBLE))
+                    - (CAST(grand_total AS DOUBLE) / 2.0),
+                    2
+                )
                 * CAST(grand_total AS DOUBLE)
               ) / (
                     (CAST(a AS DOUBLE) + CAST(b AS DOUBLE))
@@ -143,7 +150,7 @@ calc AS (
                   * (CAST(a AS DOUBLE) + CAST(c AS DOUBLE))
                   * (CAST(b AS DOUBLE) + CAST(d AS DOUBLE))
               )
-        END                                                 AS prr_chi_square,
+        END                                                 AS prr_chi_square_raw,
 
         CASE WHEN a > 0 THEN serious_cases / CAST(a AS DOUBLE) END AS serious_ratio,
         CASE WHEN a > 0 THEN death_cases   / CAST(a AS DOUBLE) END AS death_ratio,
@@ -160,13 +167,14 @@ SELECT
     grand_total,
     ROUND(prr, 4)            AS prr,
     ROUND(ror, 4)            AS ror,
-    ROUND(prr_chi_square, 4) AS prr_chi_square,
+    ROUND(LEAST(prr_chi_square_raw, ${hivevar:CHI2_CAP}), 4) AS prr_chi_square,
+    CASE WHEN prr_chi_square_raw > ${hivevar:CHI2_CAP} THEN true ELSE false END AS prr_chi_square_capped,
 
     CASE
         WHEN case_count >= ${hivevar:MIN_CASES}
          AND prr > ${hivevar:PRR_THRESHOLD}
          AND ror > ${hivevar:ROR_THRESHOLD}
-         AND prr_chi_square > ${hivevar:CHI2_THRESHOLD}
+         AND LEAST(prr_chi_square_raw, ${hivevar:CHI2_CAP}) > ${hivevar:CHI2_THRESHOLD}
             THEN 'STRONG_SIGNAL'
         WHEN case_count >= ${hivevar:MIN_CASES}
          AND (prr > ${hivevar:PRR_THRESHOLD} OR ror > ${hivevar:ROR_THRESHOLD})
@@ -192,17 +200,17 @@ SELECT
          AND serious_ratio >= 0.01
          AND prr BETWEEN 2 AND 100000
          AND ror BETWEEN 2 AND 100000
-         AND prr_chi_square >= 4
+         AND LEAST(prr_chi_square_raw, ${hivevar:CHI2_CAP}) >= 4
             THEN true
         ELSE false
     END                                                          AS passes_robust_filter,
     CASE
-        WHEN case_count < 3 OR prr <= 2 OR ror <= 2 OR prr_chi_square < 4 THEN 'not_prr_ror_signal'
+        WHEN case_count < 3 OR prr <= 2 OR ror <= 2 OR LEAST(prr_chi_square_raw, ${hivevar:CHI2_CAP}) < 4 THEN 'not_prr_ror_signal'
         WHEN case_count < 5 THEN 'too_few_cases'
         WHEN countries_count < 3 THEN 'low_source_diversity_proxy'
         WHEN serious_ratio < 0.01 THEN 'low_seriousness_ratio'
         WHEN prr > 100000 OR ror > 100000 THEN 'extreme_ratio_artifact'
-        WHEN prr_chi_square < 0 THEN 'invalid_negative_chi_square'
+        WHEN prr_chi_square_raw < 0 THEN 'invalid_negative_chi_square'
         ELSE 'passes_robust_filter'
     END                                                          AS artifact_reason,
     CASE
@@ -211,7 +219,7 @@ SELECT
          AND serious_ratio >= 0.01
          AND prr BETWEEN 2 AND 100000
          AND ror BETWEEN 2 AND 100000
-         AND prr_chi_square >= 4
+         AND LEAST(prr_chi_square_raw, ${hivevar:CHI2_CAP}) >= 4
             THEN LN(1 + case_count)
                * LN(1 + countries_count)
                * (1 + LEAST(GREATEST(serious_ratio, 0), 1) + 2 * LEAST(GREATEST(death_ratio, 0), 1))

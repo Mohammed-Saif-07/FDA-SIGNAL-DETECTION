@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it using the metadata below."
+title: "FDA Drug Safety Signal Detection at Scale"
+type: software
+authors:
+  - family-names: Mohammed
+    given-names: Saif
+repository-code: "https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION"
+abstract: "Open-source FAERS pharmacovigilance workflow for reproducible PRR/ROR signal detection, robust artifact filtering, and historical FDA warning backtesting."
+license: MIT
+version: 0.1.0
+date-released: 2026-06-29

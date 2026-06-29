@@ -106,9 +106,13 @@ The research evaluation compares:
 - `prr_ror`
 - `prr_ror_chi_square`
 - `robust_prr_ror`
+- `bcpnn_ic025`
+- `ebgm_eb05`
 - `xgboost`
 - `prr_ror_threshold`
 - `robust_prr_ror_threshold`
+- `bcpnn_ic025_threshold`
+- `ebgm_eb05_threshold`
 - `xgboost_threshold_0_5`
 
 Cutoffs:
@@ -155,6 +159,43 @@ single-country/low-diversity consumer-product artifacts from the dashboard
 export. Because the public flattened FAERS table does not include a clean
 reporter-source identifier, `countries_count` is explicitly labelled as a
 source-diversity proxy rather than true independent source count.
+
+## Baseline Methods
+
+The paper-oriented evaluator now includes two additional pharmacovigilance
+baselines:
+
+- **BCPNN IC025**: a Bayesian Information Component lower-bound approximation.
+  The threshold method uses `IC025 > 0`.
+- **Simplified EBGM/EB05**: a single-component Gamma-Poisson shrinkage baseline
+  inspired by MGPS. The threshold method uses `EB05 > 2.0`.
+
+These baselines are included for reviewer-facing comparison. The EBGM
+implementation is explicitly documented as a simplified open-source baseline,
+not FDA's proprietary production MGPS.
+
+## Statistical Significance
+
+`ml/compare_methods.py` writes:
+
+- `data/processed/mcnemar_pvalues.csv`
+- `data/processed/delong_pvalues.csv`
+
+McNemar values are computed on aggregate cutoff-level detection indicators. The
+DeLong matrix is marked non-applicable until individual warning-level score
+exports are added; the repository does not fabricate AUC-difference p-values
+from aggregate summaries.
+
+## Sensitivity Analysis
+
+`ml/sensitivity_analysis.py` varies PRR, minimum case count, IC025, and EB05
+thresholds for the `2020-12-31` cutoff. Outputs:
+
+- `data/processed/sensitivity_grid.csv`
+- `docs/figures/sensitivity.png`
+
+This analysis is intended to show how recall, precision, and candidate volume
+change as signal thresholds become stricter.
 
 ## Case Study
 

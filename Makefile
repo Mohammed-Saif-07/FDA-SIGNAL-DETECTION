@@ -2,7 +2,7 @@
 # FDA Drug Safety Signal Detection — convenience targets
 # =====================================================================
 
-.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval signal-quality report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
+.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval signal-quality bcpnn ebgm bootstrap compare-methods sensitivity figures tables test freeze docker-research paper reproduce-paper report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
 
 CONDA_RUN ?= conda run -n fda
 SPARK_HOME ?= /opt/anaconda3/envs/fda/lib/python3.11/site-packages/pyspark
@@ -49,6 +49,41 @@ research-eval: ## Run paper-style baseline, case-study, and false-positive evalu
 
 signal-quality: ## Diagnose raw vs robust PRR/ROR signal quality
 	$(CONDA_RUN) python ml/signal_quality.py
+
+bcpnn: ## Verify BCPNN IC025 baseline import/tests
+	$(CONDA_RUN) python -c "from ml.bcpnn import add_bcpnn_scores; print('bcpnn ok')"
+
+ebgm: ## Verify EBGM/EB05 baseline import/tests
+	$(CONDA_RUN) python -c "from ml.ebgm import add_ebgm_scores; print('ebgm ok')"
+
+bootstrap: ## Verify bootstrap evaluation helper
+	$(CONDA_RUN) python -c "from ml.bootstrap_eval import bootstrap_metric; print('bootstrap ok')"
+
+compare-methods: ## Generate McNemar and AUC-comparison diagnostic matrices
+	$(CONDA_RUN) python ml/compare_methods.py
+
+sensitivity: ## Generate threshold sensitivity CSV and figure
+	$(CONDA_RUN) python ml/sensitivity_analysis.py
+
+figures: ## Generate paper figures from current artifacts
+	$(CONDA_RUN) python scripts/generate_figures.py
+
+tables: ## Generate paper tables from current artifacts
+	$(CONDA_RUN) python scripts/generate_tables.py
+
+test: ## Run pytest suite
+	$(CONDA_RUN) python -m pytest -q
+
+freeze: ## Freeze current fda conda environment to requirements.lock
+	$(CONDA_RUN) python -m pip freeze > requirements.lock
+
+docker-research: ## Build reproducible research image
+	docker build -f Dockerfile.research -t fda-signal-detection:research .
+
+paper: ## Build paper PDF if latexmk is installed
+	cd paper && latexmk -pdf paper.tex
+
+reproduce-paper: research-eval compare-methods sensitivity figures tables ## Regenerate paper artifacts from local feature parquet
 
 report: research-eval ## Regenerate research evaluation artifacts used by docs/research_report.md
 

@@ -128,18 +128,19 @@ def main() -> int:
     p.add_argument("--n-estimators", type=int, default=600)
     p.add_argument("--max-depth", type=int, default=6)
     p.add_argument("--lr", type=float, default=0.05)
+    p.add_argument("--seed", type=int, default=42)
     args = p.parse_args()
 
     df = load_features(args.features)
     train_df, future_df = split_train_eval(df, args.train_cutoff)
 
-    train_df = undersample(train_df, ratio=5)
+    train_df = undersample(train_df, ratio=5, seed=args.seed)
 
     X = train_df[FEATURE_COLS].astype("float32").fillna(-1)
     y = train_df["label_became_warning"].astype(int).values
 
     X_tr, X_te, y_tr, y_te = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=42
+        X, y, test_size=0.2, stratify=y, random_state=args.seed
     )
 
     model = xgb.XGBClassifier(
@@ -153,7 +154,7 @@ def main() -> int:
         eval_metric="auc",
         tree_method="hist",
         n_jobs=-1,
-        random_state=42,
+        random_state=args.seed,
     )
 
     LOG.info("Training XGBoost on %s rows × %d features …", f"{len(X_tr):,}", X_tr.shape[1])
@@ -200,6 +201,7 @@ def main() -> int:
         "n_train": int(len(X_tr)),
         "n_test": int(len(X_te)),
         "n_future_positives": int(len(future_df)),
+        "seed": args.seed,
     }
     (MODEL_DIR / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
     LOG.info("Saved model -> %s", model_path)

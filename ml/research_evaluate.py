@@ -17,6 +17,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from bcpnn import add_bcpnn_scores
+from bootstrap_eval import binomial_ci
+from ebgm import add_ebgm_scores
 from signal_quality import add_signal_quality
 
 
@@ -84,15 +87,26 @@ def load_inputs(
 
 def ranked_tables(feats: pd.DataFrame, preds: pd.DataFrame) -> dict[str, pd.DataFrame]:
     clean = feats.copy()
-    for col in ["case_count", "prr", "ror", "prr_chi_square"]:
-        clean[col] = pd.to_numeric(clean[col], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0)
+    for col in ["case_count", "drug_total", "reaction_total", "grand_total", "prr", "ror", "prr_chi_square"]:
+        if col in clean.columns:
+            clean[col] = pd.to_numeric(clean[col], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0)
+    if "drug_total" not in clean.columns or clean["drug_total"].eq(0).all():
+        clean["drug_total"] = clean.groupby("drug_name")["case_count"].transform("sum")
+    if "reaction_total" not in clean.columns or clean["reaction_total"].eq(0).all():
+        clean["reaction_total"] = clean.groupby("reaction_term")["case_count"].transform("sum")
+    if "grand_total" not in clean.columns or clean["grand_total"].eq(0).all():
+        clean["grand_total"] = float(clean["case_count"].sum())
     clean = add_signal_quality(clean)
+    clean = add_bcpnn_scores(clean)
+    clean = add_ebgm_scores(clean)
 
     signal_mask = clean["case_count"].ge(3)
     prr_mask = signal_mask & clean["prr"].gt(2)
     ror_mask = signal_mask & clean["ror"].gt(2)
     both_mask = prr_mask & ror_mask
     chi_mask = both_mask & clean["prr_chi_square"].gt(4)
+    bcpnn_mask = clean["ic025"].gt(0)
+    ebgm_mask = clean["eb05"].gt(2)
 
     tables: dict[str, pd.DataFrame] = {
         "case_count": clean.assign(score=clean["case_count"]).sort_values("score", ascending=False),
@@ -106,6 +120,12 @@ def ranked_tables(feats: pd.DataFrame, preds: pd.DataFrame) -> dict[str, pd.Data
         ).sort_values("score", ascending=False),
         "robust_prr_ror": clean[clean["passes_robust_filter"]].assign(
             score=clean.loc[clean["passes_robust_filter"], "robust_signal_score"]
+        ).sort_values("score", ascending=False),
+        "bcpnn_ic025": clean[bcpnn_mask].assign(
+            score=clean.loc[bcpnn_mask, "ic025"]
+        ).sort_values("score", ascending=False),
+        "ebgm_eb05": clean[ebgm_mask].assign(
+            score=clean.loc[ebgm_mask, "eb05"]
         ).sort_values("score", ascending=False),
     }
 
@@ -169,6 +189,43 @@ def evaluate_cutoff_method(
             }
         )
     return rows
+
+
+def add_summary_intervals(summary: pd.DataFrame, n_boot: int = 1000, seed: int = 42) -> pd.DataFrame:
+    """Add reproducible bootstrap/binomial confidence intervals to summary rows."""
+
+    out = summary.copy()
+    interval_rows = []
+    for _, row in out.iterrows():
+        caught = int(row.get("warnings_caught", 0) or 0)
+        future = int(row.get("future_warnings", 0) or 0)
+        candidates = row.get("k") if row.get("evaluation_type") == "top_k" else row.get("ranked_candidates")
+        try:
+            candidates_n = int(candidates)
+        except (TypeError, ValueError):
+            candidates_n = int(row.get("ranked_candidates", 0) or 0)
+
+        recall_lo, recall_hi = binomial_ci(caught, future, n_boot=n_boot, seed=seed)
+        precision_lo, precision_hi = binomial_ci(caught, candidates_n, n_boot=n_boot, seed=seed)
+        median_days = row.get("median_days_early")
+        if pd.notna(median_days):
+            lead_lo = float(median_days)
+            lead_hi = float(median_days)
+        else:
+            lead_lo = np.nan
+            lead_hi = np.nan
+
+        interval_rows.append(
+            {
+                "recall_lo95": recall_lo,
+                "recall_hi95": recall_hi,
+                "precision_lo95": precision_lo,
+                "precision_hi95": precision_hi,
+                "lead_time_lo95": lead_lo,
+                "lead_time_hi95": lead_hi,
+            }
+        )
+    return pd.concat([out.reset_index(drop=True), pd.DataFrame(interval_rows)], axis=1)
 
 
 def evaluate_threshold_method(
@@ -332,6 +389,8 @@ def main() -> int:
             rows.extend(evaluate_cutoff_method(cutoff, method, table, future, args.k))
         rows.append(evaluate_threshold_method(cutoff, "prr_ror_threshold", rankings["prr_ror"], future))
         rows.append(evaluate_threshold_method(cutoff, "robust_prr_ror_threshold", rankings["robust_prr_ror"], future))
+        rows.append(evaluate_threshold_method(cutoff, "bcpnn_ic025_threshold", rankings["bcpnn_ic025"], future))
+        rows.append(evaluate_threshold_method(cutoff, "ebgm_eb05_threshold", rankings["ebgm_eb05"], future))
         if "xgboost" in rankings and "recall_probability" in rankings["xgboost"]:
             probs = pd.to_numeric(rankings["xgboost"]["recall_probability"], errors="coerce").fillna(0)
             rows.append(
@@ -343,7 +402,7 @@ def main() -> int:
                 )
             )
 
-    summary = pd.DataFrame(rows)
+    summary = add_summary_intervals(pd.DataFrame(rows), seed=42)
     summary.to_csv(OUT_DIR / "research_eval_summary.csv", index=False)
 
     case_cutoff = pd.to_datetime(args.case_cutoff)
@@ -372,6 +431,11 @@ def main() -> int:
         "predictions_rows": int(len(preds)),
         "cutoffs": args.cutoffs,
         "k_values": args.k,
+        "bootstrap": {
+            "seed": 42,
+            "n_boot": 1000,
+            "method": "binomial percentile intervals for recall and precision; lead-time intervals are point intervals when only aggregate medians are available",
+        },
         "outputs": {
             "temporal_warning_signals_csv": str(args.temporal),
             "summary_csv": str(OUT_DIR / "research_eval_summary.csv"),

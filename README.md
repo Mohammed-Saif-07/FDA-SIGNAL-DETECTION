@@ -4,6 +4,8 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![Apache Spark](https://img.shields.io/badge/PySpark-3.5-orange?logo=apachespark&logoColor=white)](https://spark.apache.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Reproducible](https://img.shields.io/badge/Reproducible-local%20make%20targets-green)](docs/REPRODUCIBILITY.md)
+[![DOI](https://img.shields.io/badge/DOI-Zenodo%20pending-lightgrey)](CITATION.cff)
 
 A zero-cost pharmacovigilance pipeline that processes public FDA FAERS
 adverse-event data, computes PRR/ROR disproportionality signals, ranks
@@ -184,6 +186,18 @@ Pipeline detected 14% of FDA warnings, median 17.3 months early.
 This is intentionally reported as a modest, reproducible result. The project
 does not claim 73% recall in its current state.
 
+## Cite This Work
+
+```bibtex
+@software{mohammed_fda_signal_detection_2026,
+  author = {Mohammed, Saif},
+  title = {FDA Drug Safety Signal Detection at Scale},
+  year = {2026},
+  url = {https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION},
+  note = {Zenodo DOI pending}
+}
+```
+
 ---
 
 ## Research Evaluation
@@ -204,9 +218,13 @@ Methods evaluated:
 - `prr_ror`
 - `prr_ror_chi_square`
 - `robust_prr_ror`
+- `bcpnn_ic025`
+- `ebgm_eb05`
 - `xgboost`
 - `prr_ror_threshold`
 - `robust_prr_ror_threshold`
+- `bcpnn_ic025_threshold`
+- `ebgm_eb05_threshold`
 - `xgboost_threshold_0_5`
 
 Main `2020-12-31` results:

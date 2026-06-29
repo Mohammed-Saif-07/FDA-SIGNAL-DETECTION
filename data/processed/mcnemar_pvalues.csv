@@ -1,0 +1,6 @@
+,bcpnn_ic025_threshold,ebgm_eb05_threshold,prr_ror_threshold,robust_prr_ror_threshold,xgboost_threshold_0_5
+bcpnn_ic025_threshold,1.0,1.0,1.0,1.0,1.0
+ebgm_eb05_threshold,1.0,1.0,1.0,1.0,1.0
+prr_ror_threshold,1.0,1.0,1.0,1.0,1.0
+robust_prr_ror_threshold,1.0,1.0,1.0,1.0,1.0
+xgboost_threshold_0_5,1.0,1.0,1.0,1.0,1.0

@@ -45,7 +45,8 @@ def postgres_engine():
 
 def export_from_postgres() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     engine = postgres_engine()
-    with engine.connect() as conn:
+    conn = engine.raw_connection()
+    try:
         signals = pd.read_sql(
             """
             SELECT *
@@ -63,6 +64,8 @@ def export_from_postgres() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
             conn,
         )
         bt = pd.read_sql("SELECT * FROM pharma.backtest_results ORDER BY run_date DESC", conn)
+    finally:
+        conn.close()
     return signals, preds, bt
 
 

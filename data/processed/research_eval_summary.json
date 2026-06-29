@@ -13,6 +13,11 @@
     50,
     100
   ],
+  "bootstrap": {
+    "seed": 42,
+    "n_boot": 1000,
+    "method": "binomial percentile intervals for recall and precision; lead-time intervals are point intervals when only aggregate medians are available"
+  },
   "outputs": {
     "temporal_warning_signals_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/temporal_warning_signals.csv",
     "summary_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/research_eval_summary.csv",
@@ -33,7 +38,13 @@
       "median_days_early": NaN,
       "median_months_early": NaN,
       "lead_time_basis": "cutoff",
-      "ranked_candidates": 505220
+      "ranked_candidates": 505220,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.0,
+      "precision_lo95": 0.0,
+      "precision_hi95": 0.0,
+      "lead_time_lo95": NaN,
+      "lead_time_hi95": NaN
     },
     {
       "cutoff": "2020-12-31",
@@ -47,7 +58,13 @@
       "median_days_early": NaN,
       "median_months_early": NaN,
       "lead_time_basis": "cutoff",
-      "ranked_candidates": 100090
+      "ranked_candidates": 100090,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.0,
+      "precision_lo95": 0.0,
+      "precision_hi95": 0.0,
+      "lead_time_lo95": NaN,
+      "lead_time_hi95": NaN
     },
     {
       "cutoff": "2020-12-31",
@@ -61,7 +78,13 @@
       "median_days_early": NaN,
       "median_months_early": NaN,
       "lead_time_basis": "cutoff",
-      "ranked_candidates": 4286074
+      "ranked_candidates": 4286074,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.0,
+      "precision_lo95": 0.0,
+      "precision_hi95": 0.0,
+      "lead_time_lo95": NaN,
+      "lead_time_hi95": NaN
     },
     {
       "cutoff": "2020-12-31",
@@ -75,7 +98,13 @@
       "median_days_early": 519.0,
       "median_months_early": 17.3,
       "lead_time_basis": "signal_first_detected_date",
-      "ranked_candidates": 505220
+      "ranked_candidates": 505220,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.42857142857142855,
+      "precision_lo95": 0.0,
+      "precision_hi95": 5.938007204782075e-06,
+      "lead_time_lo95": 519.0,
+      "lead_time_hi95": 519.0
     },
     {
       "cutoff": "2020-12-31",
@@ -89,7 +118,13 @@
       "median_days_early": 519.0,
       "median_months_early": 17.3,
       "lead_time_basis": "signal_first_detected_date",
-      "ranked_candidates": 100090
+      "ranked_candidates": 100090,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.42857142857142855,
+      "precision_lo95": 0.0,
+      "precision_hi95": 2.9973024278149667e-05,
+      "lead_time_lo95": 519.0,
+      "lead_time_hi95": 519.0
     },
     {
       "cutoff": "2020-12-31",
@@ -103,7 +138,13 @@
       "median_days_early": 519.0,
       "median_months_early": 17.3,
       "lead_time_basis": "signal_first_detected_date",
-      "ranked_candidates": 110668
+      "ranked_candidates": 110668,
+      "recall_lo95": 0.0,
+      "recall_hi95": 0.42857142857142855,
+      "precision_lo95": 0.0,
+      "precision_hi95": 2.710810713123938e-05,
+      "lead_time_lo95": 519.0,
+      "lead_time_hi95": 519.0
     }
   ],
   "limitations": [
