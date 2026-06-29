@@ -17,6 +17,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from signal_quality import add_signal_quality
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FEATURES_DIR = ROOT / "data" / "processed" / "ml_features"
@@ -84,6 +86,7 @@ def ranked_tables(feats: pd.DataFrame, preds: pd.DataFrame) -> dict[str, pd.Data
     clean = feats.copy()
     for col in ["case_count", "prr", "ror", "prr_chi_square"]:
         clean[col] = pd.to_numeric(clean[col], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0)
+    clean = add_signal_quality(clean)
 
     signal_mask = clean["case_count"].ge(3)
     prr_mask = signal_mask & clean["prr"].gt(2)
@@ -100,6 +103,9 @@ def ranked_tables(feats: pd.DataFrame, preds: pd.DataFrame) -> dict[str, pd.Data
         ).sort_values("score", ascending=False),
         "prr_ror_chi_square": clean[chi_mask].assign(
             score=clean.loc[chi_mask, "prr_chi_square"]
+        ).sort_values("score", ascending=False),
+        "robust_prr_ror": clean[clean["passes_robust_filter"]].assign(
+            score=clean.loc[clean["passes_robust_filter"], "robust_signal_score"]
         ).sort_values("score", ascending=False),
     }
 
@@ -270,7 +276,7 @@ def build_case_tables(
 
 def false_positive_table(feats: pd.DataFrame, warnings: pd.DataFrame, limit: int) -> pd.DataFrame:
     warning_keys = set(warnings["pair_key"])
-    clean = feats.copy()
+    clean = add_signal_quality(feats)
     for col in ["case_count", "prr", "ror", "prr_chi_square"]:
         clean[col] = pd.to_numeric(clean[col], errors="coerce").replace([np.inf, -np.inf], np.nan).fillna(0)
 
@@ -290,8 +296,15 @@ def false_positive_table(feats: pd.DataFrame, warnings: pd.DataFrame, limit: int
         "serious_ratio",
         "death_ratio",
         "countries_count",
+        "source_proxy_count",
+        "passes_robust_filter",
+        "artifact_reason",
+        "robust_signal_score",
     ]
-    return clean.loc[mask, cols].sort_values(["case_count", "prr"], ascending=False).head(limit)
+    return clean.loc[mask, cols].sort_values(
+        ["passes_robust_filter", "robust_signal_score", "case_count", "prr"],
+        ascending=[False, False, False, False],
+    ).head(limit)
 
 
 def main() -> int:
@@ -318,6 +331,7 @@ def main() -> int:
         for method, table in rankings.items():
             rows.extend(evaluate_cutoff_method(cutoff, method, table, future, args.k))
         rows.append(evaluate_threshold_method(cutoff, "prr_ror_threshold", rankings["prr_ror"], future))
+        rows.append(evaluate_threshold_method(cutoff, "robust_prr_ror_threshold", rankings["robust_prr_ror"], future))
         if "xgboost" in rankings and "recall_probability" in rankings["xgboost"]:
             probs = pd.to_numeric(rankings["xgboost"]["recall_probability"], errors="coerce").fillna(0)
             rows.append(
@@ -344,11 +358,11 @@ def main() -> int:
         (summary["cutoff"] == args.case_cutoff)
         & (
             (
-                (summary["method"].isin(["xgboost", "prr_ror"]))
+                (summary["method"].isin(["xgboost", "prr_ror", "robust_prr_ror"]))
                 & (summary["evaluation_type"].eq("top_k"))
                 & (summary["k"].astype(str).eq(str(args.case_k)))
             )
-            | (summary["method"].isin(["prr_ror_threshold", "xgboost_threshold_0_5"]))
+            | (summary["method"].isin(["prr_ror_threshold", "robust_prr_ror_threshold", "xgboost_threshold_0_5"]))
         )
     ].copy()
     payload = {
@@ -371,6 +385,7 @@ def main() -> int:
             "Lead time uses signal_first_detected_date when available; older feature files fall back to the evaluation cutoff.",
             "The warning reference file is hand-curated and should be expanded with more verified FDA sources.",
             "The Docker Hive smoke validates HQL execution, but the current Docker Hive table is not loaded with the full FAERS Parquet sample.",
+            "Robust signal filtering uses country count as a public-data source-diversity proxy because FAERS public extracts do not provide a clean reporter-source identifier.",
         ],
     }
     (OUT_DIR / "research_eval_summary.json").write_text(json.dumps(payload, indent=2, default=str))

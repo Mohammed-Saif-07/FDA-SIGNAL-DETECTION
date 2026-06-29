@@ -6,8 +6,9 @@ This project implements a zero-cost, locally reproducible pharmacovigilance
 pipeline for detecting drug safety signals in FDA FAERS adverse-event data. The
 pipeline parses nested FAERS JSON, creates flattened drug/reaction Parquet
 tables, computes PRR/ROR disproportionality signals, trains an XGBoost ranking
-model, and backtests detected signals against a curated FDA warning reference
-set. On a `2020-12-31` cutoff, the threshold-based PRR/ROR and XGBoost
+model, applies a transparent robust signal-quality filter, and backtests
+detected signals against a curated FDA warning reference set. On a
+`2020-12-31` cutoff, the threshold-based PRR/ROR and XGBoost
 probability workflows each detected 1 of 7 post-cutoff FDA warnings. The
 PRR/ROR-detected warning first crossed the signal threshold at the `2020-03-31`
 quarter end, 519 days, or 17.3 months, before official FDA action. Results show that the system
@@ -36,6 +37,9 @@ The project implements:
 - PySpark ingestion and cleaning of public FAERS adverse-event files.
 - Feature engineering over flattened drug/reaction pairs.
 - PRR, ROR, and chi-square signal metrics.
+- Overflow-safe chi-square computation in Spark and Hive.
+- Robust PRR/ROR filtering using case count, seriousness, ratio bounds, and
+  country-count source-diversity proxy.
 - Hive/HQL implementations mirroring the PRR/ROR calculations.
 - XGBoost ranking over engineered signal features.
 - PostgreSQL, FastAPI, and Streamlit for serving and visualizing outputs.
@@ -82,6 +86,8 @@ Current processed evaluation data:
 - Feature rows: 4,286,074 drug/reaction pairs.
 - Warning reference rows: 56 curated FDA warning rows.
 - 2020-cutoff future warning rows: 7.
+- Raw PRR/ROR threshold candidates: 505,220.
+- Robust-pass PRR/ROR candidates: 100,090.
 - Dashboard snapshot rows: 2,000 signals and 2,000 predictions for Streamlit
   Cloud.
 
@@ -99,8 +105,10 @@ The research evaluation compares:
 - `ror`
 - `prr_ror`
 - `prr_ror_chi_square`
+- `robust_prr_ror`
 - `xgboost`
 - `prr_ror_threshold`
+- `robust_prr_ror_threshold`
 - `xgboost_threshold_0_5`
 
 Cutoffs:
@@ -126,7 +134,8 @@ For the main `2020-12-31` cutoff:
 | Method | Evaluation | Future Warnings | Caught | Recall | Precision | Median Lead Time |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0002% | 519 days |
-| XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 244 days |
+| Robust PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0010% | 519 days |
+| XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 519 days |
 | XGBoost top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 | PRR/ROR top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 
@@ -139,6 +148,13 @@ The headline result is therefore:
 
 This is a modest result. It supports the reproducibility and engineering value
 of the system, but not a claim of high predictive accuracy.
+
+The robust filter reduced raw PRR/ROR candidates from 505,220 to 100,090
+without losing the detected post-cutoff warning. It also removed the earlier
+single-country/low-diversity consumer-product artifacts from the dashboard
+export. Because the public flattened FAERS table does not include a clean
+reporter-source identifier, `countries_count` is explicitly labelled as a
+source-diversity proxy rather than true independent source count.
 
 ## Case Study
 
@@ -163,6 +179,9 @@ not ranking or thresholding high enough.
 - Top-k ranking performance is weak in the current run.
 - False-positive volume is high: hundreds of thousands of PRR/ROR threshold
   candidates do not match the curated FDA warning reference set.
+- Robust filtering reduces obvious artifact-like rankings but remains a
+  heuristic; it should be compared against BCPNN/IC and EBGM/MGPS baselines for
+  a stronger paper.
 - Docker Hive smoke validates schema and HQL execution, but the current Docker
   Hive table is not loaded with the full FAERS Parquet sample.
 

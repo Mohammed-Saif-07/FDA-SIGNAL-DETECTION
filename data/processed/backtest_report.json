@@ -1,5 +1,5 @@
 {
-  "run_date": "2026-06-28",
+  "run_date": "2026-06-29",
   "train_cutoff": "2020-12-31",
   "future_warnings_count": 7,
   "rule_recall": 0.14285714285714285,

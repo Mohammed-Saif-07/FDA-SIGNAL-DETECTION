@@ -18,6 +18,8 @@ import pyarrow.parquet as pq
 import psycopg2
 from psycopg2.extras import execute_values
 
+from signal_quality import add_signal_quality
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FEATURES_PATH = ROOT / "data" / "processed" / "ml_features"
@@ -62,15 +64,17 @@ def load_signals(path: Path, top_n: int) -> pd.DataFrame:
     available = pq.ParquetDataset(path).schema.names
     cols.extend([col for col in optional_cols if col in available])
     df = pd.read_parquet(path, columns=cols)
+    df = add_signal_quality(df)
 
     signals = df[
         (df["case_count"] >= 3)
         & (df["prr"] > 2.0)
         & (df["ror"] > 2.0)
+        & (df["passes_robust_filter"])
     ].copy()
     signals = signals.sort_values(
-        ["prr_chi_square", "case_count", "prr"],
-        ascending=[False, False, False],
+        ["robust_signal_score", "prr_chi_square", "case_count", "prr"],
+        ascending=[False, False, False, False],
     ).head(top_n)
 
     for col in ["prr", "ror", "prr_chi_square"]:
@@ -113,6 +117,10 @@ def load_signals(path: Path, top_n: int) -> pd.DataFrame:
         "serious_ratio",
         "death_ratio",
         "countries_count",
+        "source_proxy_count",
+        "passes_robust_filter",
+        "artifact_reason",
+        "robust_signal_score",
     ]
     return signals[out_cols]
 
@@ -156,6 +164,10 @@ def main() -> None:
 
     with psycopg2.connect(**pg_params()) as conn:
         with conn.cursor() as cur:
+            cur.execute("ALTER TABLE pharma.drug_signals ADD COLUMN IF NOT EXISTS source_proxy_count INTEGER")
+            cur.execute("ALTER TABLE pharma.drug_signals ADD COLUMN IF NOT EXISTS passes_robust_filter BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE pharma.drug_signals ADD COLUMN IF NOT EXISTS artifact_reason TEXT")
+            cur.execute("ALTER TABLE pharma.drug_signals ADD COLUMN IF NOT EXISTS robust_signal_score NUMERIC(14,4)")
             cur.execute("TRUNCATE pharma.signal_predictions, pharma.drug_signals RESTART IDENTITY")
             insert_dataframe(cur, "pharma.drug_signals", list(signals.columns), signals)
             insert_dataframe(cur, "pharma.signal_predictions", list(predictions.columns), predictions)

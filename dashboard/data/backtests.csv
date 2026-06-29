@@ -1,5 +1,2 @@
 id,run_date,model_version,train_cutoff_date,auc_roc,precision_at_100,recall_overall,median_days_early,warnings_caught,warnings_total,notes
-4,2026-05-24 21:04:26.007264,xgb-v1,2020-12-31,,0.02,0.1429,244.0,1,7,"Pipeline detected 14% of FDA warnings, median 8.1 months early."
-3,2026-05-24 21:01:00.993824,xgb-v1,2020-12-31,,0.02,0.1429,244.0,1,7,"Pipeline detected 14% of FDA warnings, median 8.1 months early."
-2,2026-05-24 20:43:46.742750,xgb-v1,2020-12-31,,0.0,0.1429,244.0,1,7,"Pipeline detected 14% of FDA warnings, median 8.1 months early."
-1,2026-05-24 20:43:15.937896,xgb-v1,2020-12-31,,0.0,0.0,,1,7,"Pipeline detected 14% of FDA warnings, median 8.1 months early."
+1,2026-06-29,xgb-v1,2020-12-31,,0.02,0.14285714285714285,519,1,7,"Pipeline detected 14% of FDA warnings, median 17.3 months early."

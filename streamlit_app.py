@@ -54,9 +54,9 @@ if page == "Overview":
     c2.metric("STRONG signals",
               int((signals["signal_status"] == "STRONG_SIGNAL").sum())
               if "signal_status" in signals else 0)
-    c3.metric("HIGH confidence",
-              int((signals["confidence"] == "HIGH").sum())
-              if "confidence" in signals else 0)
+    c3.metric("Robust-pass signals",
+              int((signals["passes_robust_filter"] == True).sum())
+              if "passes_robust_filter" in signals else 0)
     c4.metric("ML predictions", f"{len(preds):,}")
 
     st.divider()
@@ -66,8 +66,13 @@ if page == "Overview":
         "- **SQL:** Apache Hive — partitioned Parquet, vectorised execution  \n"
         "- **Compute:** PySpark 3.5  \n"
         "- **ML:** XGBoost classifier predicting *signal → FDA warning*  \n"
+        "- **Quality layer:** robust PRR/ROR filter for artifact-prone signals  \n"
         "- **Orchestration:** Airflow (`@quarterly`)  \n"
         "- **Results store:** PostgreSQL  \n"
+    )
+    st.info(
+        "Cloud deployment note: this public Streamlit app reads exported CSV snapshots. "
+        "HDFS, Hive, FastAPI, Airflow, Spark UI, and PostgreSQL run locally on my Mac through Docker Compose."
     )
 
 # ================================================================== #
@@ -171,6 +176,14 @@ warnings months before FDA announces them.
 **Stack:** Hadoop HDFS · Apache Hive · PySpark 3.5 · XGBoost 2.0 ·
 PostgreSQL · Apache Airflow · FastAPI · Streamlit · Docker Compose.
 
+**Cloud limitation:** Streamlit Cloud cannot run or expose my local Docker
+network, HDFS NameNode, HiveServer2, Spark UI, Airflow UI, FastAPI service, or
+PostgreSQL container. The deployed app therefore uses exported CSV snapshots.
+The full pipeline runs locally on macOS with Docker Compose.
+
+**Research limitation:** PRR/ROR signals are statistical alerts, not causal
+proof. The robust filter uses country count as a source-diversity proxy because
+the flattened public FAERS table does not include a clean reporter-source ID.
 
 **Source:** [github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION](https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION)
 

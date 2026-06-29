@@ -134,23 +134,33 @@ def main() -> int:
             feats.withColumn("prr",
                 F.when((F.col("a") + F.col("b")) * F.col("c") == 0, None)
                  .otherwise(
-                    (F.col("a") / (F.col("a") + F.col("b"))) /
-                    (F.col("c") / (F.col("c") + F.col("d")))
+                    (F.col("a").cast("double") / (F.col("a") + F.col("b")).cast("double")) /
+                    (F.col("c").cast("double") / (F.col("c") + F.col("d")).cast("double"))
                  ))
             .withColumn("ror",
                 F.when(F.col("b") * F.col("c") == 0, None)
-                 .otherwise((F.col("a") * F.col("d")) / (F.col("b") * F.col("c"))))
+                 .otherwise(
+                    (F.col("a").cast("double") * F.col("d").cast("double")) /
+                    (F.col("b").cast("double") * F.col("c").cast("double"))
+                 ))
             .withColumn("prr_chi_square",
                 F.when((F.col("a") + F.col("b")) == 0, None)
                  .otherwise(
-                    F.pow(F.abs(F.col("a") * F.col("d") -
-                                F.col("b") * F.col("c")) - F.lit(grand_total) / 2.0, 2)
-                    * F.lit(grand_total)
+                    F.pow(
+                        F.abs(
+                            F.col("a").cast("double") * F.col("d").cast("double") -
+                            F.col("b").cast("double") * F.col("c").cast("double")
+                        ) - F.lit(float(grand_total)) / 2.0,
+                        2,
+                    )
+                    * F.lit(float(grand_total))
                     /
-                    ((F.col("a") + F.col("b"))
-                     * (F.col("c") + F.col("d"))
-                     * (F.col("a") + F.col("c"))
-                     * (F.col("b") + F.col("d")))
+                    (
+                        (F.col("a") + F.col("b")).cast("double")
+                        * (F.col("c") + F.col("d")).cast("double")
+                        * (F.col("a") + F.col("c")).cast("double")
+                        * (F.col("b") + F.col("d")).cast("double")
+                    )
                  ))
         )
 

@@ -2,7 +2,7 @@
 # FDA Drug Safety Signal Detection — convenience targets
 # =====================================================================
 
-.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
+.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval signal-quality report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
 
 CONDA_RUN ?= conda run -n fda
 SPARK_HOME ?= /opt/anaconda3/envs/fda/lib/python3.11/site-packages/pyspark
@@ -46,6 +46,9 @@ smoke-local:   ## Smoke-test local conda dependencies and backtest
 
 research-eval: ## Run paper-style baseline, case-study, and false-positive evaluation
 	./scripts/research_eval.sh
+
+signal-quality: ## Diagnose raw vs robust PRR/ROR signal quality
+	$(CONDA_RUN) python ml/signal_quality.py
 
 report: research-eval ## Regenerate research evaluation artifacts used by docs/research_report.md
 

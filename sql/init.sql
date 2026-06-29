@@ -24,12 +24,17 @@ CREATE TABLE IF NOT EXISTS pharma.drug_signals (
     serious_ratio       NUMERIC(6,4),
     death_ratio         NUMERIC(6,4),
     countries_count     INTEGER,
+    source_proxy_count  INTEGER,
+    passes_robust_filter BOOLEAN DEFAULT FALSE,
+    artifact_reason     TEXT,
+    robust_signal_score NUMERIC(14,4),
     UNIQUE (drug_name, reaction_term)
 );
 
 CREATE INDEX IF NOT EXISTS idx_signals_drug      ON pharma.drug_signals(drug_name);
 CREATE INDEX IF NOT EXISTS idx_signals_status    ON pharma.drug_signals(signal_status);
 CREATE INDEX IF NOT EXISTS idx_signals_prr       ON pharma.drug_signals(prr DESC);
+CREATE INDEX IF NOT EXISTS idx_signals_robust    ON pharma.drug_signals(passes_robust_filter, robust_signal_score DESC);
 
 -- ----------------------- ML PREDICTIONS -------------------------------
 CREATE TABLE IF NOT EXISTS pharma.signal_predictions (

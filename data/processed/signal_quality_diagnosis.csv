@@ -1,0 +1,11 @@
+metric,value
+rows,4286074.0
+raw_prr_ror_signals,505220.0
+robust_signals,100090.0
+robust_pass_rate_among_raw_signals,0.1981117137088793
+artifact_reason:not_prr_ror_signal,3863558.0
+artifact_reason:too_few_cases,175124.0
+artifact_reason:low_source_diversity_proxy,147173.0
+artifact_reason:passes_robust_filter,100090.0
+artifact_reason:low_seriousness_ratio,124.0
+artifact_reason:extreme_ratio_artifact,5.0

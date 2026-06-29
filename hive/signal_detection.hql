@@ -121,8 +121,8 @@ calc AS (
         /* PRR = (a / (a + b))  /  (c / (c + d))      */
         CASE
             WHEN (a + b) = 0 OR (c + d) = 0 OR c = 0 THEN NULL
-            ELSE (CAST(a AS DOUBLE) / (a + b)) /
-                 (CAST(c AS DOUBLE) / (c + d))
+            ELSE (CAST(a AS DOUBLE) / (CAST(a AS DOUBLE) + CAST(b AS DOUBLE))) /
+                 (CAST(c AS DOUBLE) / (CAST(c AS DOUBLE) + CAST(d AS DOUBLE)))
         END                                                 AS prr,
 
         /* ROR = (a*d) / (b*c)                       */
@@ -136,8 +136,13 @@ calc AS (
             WHEN (a + b) = 0 OR (c + d) = 0 OR (a + c) = 0 OR (b + d) = 0 THEN NULL
             ELSE (
                 POWER(ABS(CAST(a AS DOUBLE) * d - CAST(b AS DOUBLE) * c) - (grand_total / 2.0), 2)
-                * grand_total
-              ) / (CAST(a + b AS DOUBLE) * (c + d) * (a + c) * (b + d))
+                * CAST(grand_total AS DOUBLE)
+              ) / (
+                    (CAST(a AS DOUBLE) + CAST(b AS DOUBLE))
+                  * (CAST(c AS DOUBLE) + CAST(d AS DOUBLE))
+                  * (CAST(a AS DOUBLE) + CAST(c AS DOUBLE))
+                  * (CAST(b AS DOUBLE) + CAST(d AS DOUBLE))
+              )
         END                                                 AS prr_chi_square,
 
         CASE WHEN a > 0 THEN serious_cases / CAST(a AS DOUBLE) END AS serious_ratio,
@@ -179,7 +184,41 @@ SELECT
     CURRENT_TIMESTAMP()                                          AS last_updated_ts,
     ROUND(serious_ratio, 4)                                      AS serious_ratio,
     ROUND(death_ratio, 4)                                        AS death_ratio,
-    countries_count
+    countries_count,
+    countries_count                                              AS source_proxy_count,
+    CASE
+        WHEN case_count >= 5
+         AND countries_count >= 3
+         AND serious_ratio >= 0.01
+         AND prr BETWEEN 2 AND 100000
+         AND ror BETWEEN 2 AND 100000
+         AND prr_chi_square >= 4
+            THEN true
+        ELSE false
+    END                                                          AS passes_robust_filter,
+    CASE
+        WHEN case_count < 3 OR prr <= 2 OR ror <= 2 OR prr_chi_square < 4 THEN 'not_prr_ror_signal'
+        WHEN case_count < 5 THEN 'too_few_cases'
+        WHEN countries_count < 3 THEN 'low_source_diversity_proxy'
+        WHEN serious_ratio < 0.01 THEN 'low_seriousness_ratio'
+        WHEN prr > 100000 OR ror > 100000 THEN 'extreme_ratio_artifact'
+        WHEN prr_chi_square < 0 THEN 'invalid_negative_chi_square'
+        ELSE 'passes_robust_filter'
+    END                                                          AS artifact_reason,
+    CASE
+        WHEN case_count >= 5
+         AND countries_count >= 3
+         AND serious_ratio >= 0.01
+         AND prr BETWEEN 2 AND 100000
+         AND ror BETWEEN 2 AND 100000
+         AND prr_chi_square >= 4
+            THEN LN(1 + case_count)
+               * LN(1 + countries_count)
+               * (1 + LEAST(GREATEST(serious_ratio, 0), 1) + 2 * LEAST(GREATEST(death_ratio, 0), 1))
+               * LN(1 + prr)
+               * LN(1 + ror)
+        ELSE 0.0
+    END                                                          AS robust_signal_score
 FROM   calc;
 
 -- =====================================================================

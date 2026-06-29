@@ -203,8 +203,10 @@ Methods evaluated:
 - `ror`
 - `prr_ror`
 - `prr_ror_chi_square`
+- `robust_prr_ror`
 - `xgboost`
 - `prr_ror_threshold`
+- `robust_prr_ror_threshold`
 - `xgboost_threshold_0_5`
 
 Main `2020-12-31` results:
@@ -212,9 +214,27 @@ Main `2020-12-31` results:
 | Method | Evaluation | Future Warnings | Caught | Recall | Precision | Median Lead Time |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0002% | 519 days |
-| XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 244 days |
+| Robust PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0010% | 519 days |
+| XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 519 days |
 | XGBoost top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 | PRR/ROR top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
+
+Signal-quality diagnosis:
+
+```bash
+make signal-quality
+```
+
+Current diagnosis from the regenerated feature table:
+
+- raw PRR/ROR signals: `505,220`
+- robust-pass signals: `100,090`
+- robust pass rate among raw PRR/ROR signals: `19.8%`
+- negative chi-square rows after overflow fix: `0`
+
+The robust filter is documented in `docs/DIAGNOSIS.md`. It uses
+`countries_count` as a public-data source-diversity proxy because this flattened
+FAERS table does not contain a clean reporter-source identifier.
 
 Generate the research artifacts:
 
@@ -233,6 +253,7 @@ data/processed/temporal_warning_signals.csv
 data/processed/case_studies.csv
 data/processed/missed_warnings.csv
 data/processed/false_positive_analysis.csv
+data/processed/signal_quality_diagnosis.csv
 ```
 
 The research report is written as an applied systems/capstone paper draft:
@@ -431,6 +452,8 @@ What is already defensible:
 - reproducible PRR/ROR formulas
 - PySpark feature engineering
 - Hive/HQL implementation of the core signal math
+- overflow-safe chi-square computation in both Spark and Hive
+- robust PRR/ROR quality filter to reduce obvious artifact-like rankings
 - Docker Compose demonstration of the distributed architecture
 - PostgreSQL/API/dashboard serving layer
 - honest backtest against curated FDA warning references
