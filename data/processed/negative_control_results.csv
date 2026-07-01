@@ -1,0 +1,3 @@
+method,n_negatives_curated,n_positives_curated,fp_on_negatives,tp_on_positives,fp_rate_on_negatives,recall_on_positives,specificity_estimate,note
+prr_ror_threshold,20,56,0,4,0.0,0.0714,1.0,specificity restricted to curated negative controls (n=20); not a full-population estimate.
+robust_prr_ror_threshold,20,56,0,4,0.0,0.0714,1.0,specificity restricted to curated negative controls (n=20); not a full-population estimate.

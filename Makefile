@@ -167,3 +167,18 @@ local-finish-2020: ## Resume from clean Parquet: features, train, predict, evalu
 	$(CONDA_RUN) python ml/train_model.py --train-cutoff 2020-12-31
 	$(CONDA_RUN) python ml/predictor.py --no-write-pg
 	$(CONDA_RUN) python ml/evaluate.py --cutoff 2020-12-31
+
+# ---------------- Phase 4 statistical rigor (added) ----------------
+.PHONY: ranking-stability calibration negative-controls phase4
+
+ranking-stability:  ## Bootstrap method-ranking stability (writes method_ranking_stability.csv)
+	$(CONDA_RUN) python ml/permutation_test.py
+
+calibration:        ## XGBoost reliability diagram -> docs/figures/xgboost_calibration.{png,svg}
+	$(CONDA_RUN) python scripts/generate_calibration.py
+
+negative-controls:  ## Evaluate methods on 20 negative-control pairs
+	$(CONDA_RUN) python ml/negative_control_eval.py
+
+phase4: ranking-stability calibration negative-controls  ## Run all Phase 4 rigor items
+	@echo "Phase 4 artifacts generated."

@@ -1,0 +1,6 @@
+method,mean_rank,p_rank1,p_rank2,p_rank3,p_rank4,p_rank5
+bcpnn_ic025_threshold,1.008,0.996,0.0,0.004,0.0,0.0
+ebgm_eb05_threshold,3.498,0.0,0.0,0.004,0.996,0.0
+prr_ror_threshold,3.498,0.0,0.0,0.004,0.996,0.0
+robust_prr_ror_threshold,3.498,0.0,0.0,0.004,0.996,0.0
+xgboost_threshold_0_5,3.498,0.0,0.0,0.004,0.996,0.0

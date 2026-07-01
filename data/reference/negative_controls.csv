@@ -1,0 +1,21 @@
+drug_name,reaction_term,source,notes
+ATORVASTATIN,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+ATORVASTATIN,NAUSEA,PV_literature_common_negative_control,common non-warned pair
+METFORMIN,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+METFORMIN,FATIGUE,PV_literature_common_negative_control,common non-warned pair
+LISINOPRIL,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+LISINOPRIL,FATIGUE,PV_literature_common_negative_control,common non-warned pair
+AMLODIPINE,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+AMLODIPINE,DIZZINESS,PV_literature_common_negative_control,common non-warned pair
+OMEPRAZOLE,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+OMEPRAZOLE,NAUSEA,PV_literature_common_negative_control,common non-warned pair
+LEVOTHYROXINE,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+LEVOTHYROXINE,FATIGUE,PV_literature_common_negative_control,common non-warned pair
+SERTRALINE,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+SERTRALINE,NAUSEA,PV_literature_common_negative_control,common non-warned pair
+IBUPROFEN,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+ACETAMINOPHEN,NAUSEA,PV_literature_common_negative_control,common non-warned pair
+ASPIRIN,HEADACHE,PV_literature_common_negative_control,common non-warned pair
+LORATADINE,FATIGUE,PV_literature_common_negative_control,common non-warned pair
+CETIRIZINE,FATIGUE,PV_literature_common_negative_control,common non-warned pair
+DIPHENHYDRAMINE,DIZZINESS,PV_literature_common_negative_control,common non-warned pair

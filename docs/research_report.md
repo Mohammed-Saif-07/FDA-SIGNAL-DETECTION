@@ -211,6 +211,39 @@ Missed warnings are written to `data/processed/missed_warnings.csv` with a
 reason label. The most common reasons are exact terminology mismatch and signals
 not ranking or thresholding high enough.
 
+## Ranking Stability
+
+To measure how confidently BCPNN IC025 can be called the best-performing
+method given only four backtest cutoffs, we bootstrapped the cutoff axis
+(n=1000 resamples, seed=42) and re-ranked methods by aggregate warnings
+caught in each resample. **BCPNN IC025 achieved rank 1 in 99.6% of
+resamples** (mean rank 1.008); the other four threshold methods tied at a
+mean rank of approximately 3.5. This indicates the BCPNN advantage is stable
+under cutoff resampling, subject to the underlying small-sample uncertainty
+captured by the per-cutoff bootstrap CIs. Full results in
+`data/processed/method_ranking_stability.csv`.
+
+## XGBoost Calibration
+
+The XGBoost reliability diagram (`docs/figures/xgboost_calibration.png`) is
+included for transparency. The committed prediction snapshot has only 8 of
+2000 rows labelled with a real FDA warning date, so the empirical positive
+rate in most predicted-probability deciles is not reliably estimable. Any
+operational use of the model would require recalibration on a larger
+positive set.
+
+## Negative Controls
+
+We curated 20 well-known drug-reaction pairs that are commonly co-reported
+in FAERS but have not been the subject of an FDA safety action
+(`data/reference/negative_controls.csv`). At the standard threshold gate
+(PRR>2, ROR>2, chi-square≥4, cases≥3), **zero of 20 negative-control pairs
+triggered a signal on the committed snapshot**, yielding a curated-set
+specificity estimate of 1.0. Specificity here is restricted to the curated
+negatives; the false-positive population as a whole is dominated by
+confounding-by-indication signals not represented in this control set. Full
+results in `data/processed/negative_control_results.csv`.
+
 ## Limitations
 
 - FAERS signals are not causal proof.
