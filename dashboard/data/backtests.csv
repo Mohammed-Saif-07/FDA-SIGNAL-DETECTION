@@ -1,2 +1,2 @@
 id,run_date,model_version,train_cutoff_date,auc_roc,precision_at_100,recall_overall,median_days_early,warnings_caught,warnings_total,notes
-1,2026-06-29,xgb-v1,2020-12-31,,0.02,0.14285714285714285,519,1,7,"Pipeline detected 14% of FDA warnings, median 17.3 months early."
+1,2026-07-01,bcpnn_ic025,2020-12-31,,,0.2857142857142857,519,2,7,"BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the 2020-12-31 cutoff (28.6% recall, 95% CI [0.00, 0.71]), including UPADACITINIB - MYOCARDIAL INFARCTION at 17.3 months lead time. This exceeds PRR/ROR (1/7), EBGM/EB05 (1/7), and XGBoost (1/7) at the same cutoff."

@@ -51,7 +51,8 @@ def export_from_postgres() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
             """
             SELECT *
             FROM pharma.drug_signals
-            ORDER BY passes_robust_filter DESC NULLS LAST,
+            ORDER BY passes_structural_filter DESC NULLS LAST,
+                     passes_robust_filter DESC NULLS LAST,
                      robust_signal_score DESC NULLS LAST,
                      prr_chi_square DESC NULLS LAST,
                      case_count DESC
@@ -85,13 +86,13 @@ def export_from_local_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     feats = add_signal_quality(feats)
     signals = feats[feats["passes_robust_filter"]].copy()
     signals = signals.sort_values(
-        ["robust_signal_score", "prr_chi_square", "case_count"],
-        ascending=[False, False, False],
+        ["passes_structural_filter", "robust_signal_score", "prr_chi_square", "case_count"],
+        ascending=[False, False, False, False],
     ).head(2000)
     grand_total = int(feats["case_count"].sum())
     signals.insert(0, "id", range(1, len(signals) + 1))
-    signals["drug_total"] = signals["case_count"].astype(int)
-    signals["reaction_total"] = signals["case_count"].astype(int)
+    signals["drug_total"] = pd.to_numeric(signals["drug_total"], errors="coerce").fillna(0).astype(int)
+    signals["reaction_total"] = pd.to_numeric(signals["reaction_total"], errors="coerce").fillna(0).astype(int)
     signals["grand_total"] = grand_total
     signals["signal_status"] = "STRONG_SIGNAL"
     signals["confidence"] = signals.apply(
@@ -140,13 +141,13 @@ def export_from_local_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
                 {
                     "id": 1,
                     "run_date": report.get("run_date"),
-                    "model_version": "xgb-v1",
+                    "model_version": report.get("primary_method", "xgb-v1"),
                     "train_cutoff_date": report.get("train_cutoff"),
                     "auc_roc": None,
                     "precision_at_100": report.get("precision_at_100"),
-                    "recall_overall": report.get("rule_recall"),
+                    "recall_overall": report.get("recall", report.get("rule_recall")),
                     "median_days_early": report.get("median_days_early"),
-                    "warnings_caught": report.get("rule_warnings_caught"),
+                    "warnings_caught": report.get("warnings_caught", report.get("rule_warnings_caught")),
                     "warnings_total": report.get("future_warnings_count"),
                     "notes": report.get("headline"),
                 }
