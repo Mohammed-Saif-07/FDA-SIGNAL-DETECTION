@@ -1,0 +1,30 @@
+{
+  "title": "FDA Drug Safety Signal Detection at Scale",
+  "description": "Open-source FAERS pharmacovigilance workflow for reproducible PRR/ROR, BCPNN IC025, simplified EBGM/EB05, XGBoost ranking, robust artifact filtering, and historical FDA warning backtesting.",
+  "creators": [
+    {
+      "name": "Mohammed, Saif",
+      "affiliation": "Seattle University"
+    }
+  ],
+  "license": "MIT",
+  "keywords": [
+    "FAERS",
+    "pharmacovigilance",
+    "drug safety",
+    "signal detection",
+    "PRR",
+    "ROR",
+    "BCPNN",
+    "EBGM",
+    "PySpark",
+    "Hive"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}

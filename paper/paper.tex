@@ -1,92 +1,295 @@
 \documentclass[12pt,onecolumn]{IEEEtran}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{adjustbox}
 
 \title{Reproducible Drug Safety Signal Detection on Public FAERS Data}
-\author{Saif Mohammed\\Seattle University}
+\author{Mohammed Saif\\
+Seattle University\\
+Email: [fill before submission]\\
+ORCID: [fill before submission]}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We present an open-source pharmacovigilance workflow for reproducing
-disproportionality-based drug safety signal detection on public FDA Adverse
-Event Reporting System (FAERS) data. The pipeline implements PRR and ROR signal
-detection, robust artifact filtering, BCPNN IC025 and simplified EBGM/EB05
-baselines, XGBoost ranking, and historical warning backtesting. On the current
-2020-12-31 cutoff validation artifact, the workflow detects 1 of 7 post-cutoff
-FDA warning pairs: UPADACITINIB--MYOCARDIAL INFARCTION, first crossing the
-signal threshold 519 days (17.3 months) before the reference FDA warning date.
-The contribution is not a clinical decision support claim; it is a reproducible
-workflow and an empirical characterization of the false-positive-dominant nature
-of naive FAERS disproportionality analysis.
+Public FDA Adverse Event Reporting System (FAERS) spontaneous-report data are
+widely used for post-marketing drug safety signal detection, but naive
+disproportionality analysis is known to produce many false-positive signals.
+This work presents a reproducible, zero-cost, locally runnable
+pharmacovigilance workflow that implements proportional reporting ratio (PRR),
+reporting odds ratio (ROR), BCPNN IC025, simplified EBGM/EB05, and XGBoost
+ranking, then backtests these methods against curated historical FDA safety
+actions. On the 2020-12-31 cutoff, BCPNN IC025 detects 2 of 7 post-cutoff
+warnings, exceeding PRR/ROR, EBGM/EB05, and XGBoost, each of which detects 1 of
+7. The earliest detection, UPADACITINIB--MYOCARDIAL INFARCTION, crosses the
+signal threshold 519 days before the reference FDA action. Wide bootstrap
+confidence intervals reflect the small size of the curated ground truth. A
+structural analysis of false positives shows that confounding by indication and
+structurally narrow public FAERS pairs dominate the top-ranked non-warning
+signals. The contribution is not a new clinical decision support model; it is an
+open-source benchmark and reproducibility harness for public pharmacovigilance
+research.
 \end{abstract}
 
 \section{Introduction}
-Spontaneous adverse-event reporting systems are widely used for post-marketing
-drug safety surveillance. Public FAERS data enables reproducible research, but
-naive disproportionality analysis produces many artifacts. This work builds a
-local, zero-cost pipeline for signal detection and backtesting.
+Post-marketing drug safety surveillance depends on detecting unexpected adverse
+event patterns after products reach broad clinical use. Spontaneous reporting
+systems such as FAERS are useful because they are large, public, and updated
+quarterly, but they are also noisy: reporting is voluntary, denominators are
+unknown, duplicate and stimulated reports occur, and co-reporting does not
+establish causality \cite{hauben2009review,bate2009quantitative,sakaeda2013faers}.
+These properties make FAERS suitable for signal generation, not causal
+inference.
+
+This work studies whether a fully reproducible local pipeline can benchmark
+standard pharmacovigilance signal detectors on public FAERS data. The project
+implements PRR, ROR, BCPNN IC025, simplified EBGM/EB05, and XGBoost ranking;
+generates PySpark and Hive/HQL features; and evaluates post-cutoff detection
+against curated FDA safety actions. The empirical finding is modest but
+actionable: BCPNN IC025 is the strongest method in the current benchmark, while
+the broad confidence intervals show that the reference set is too small for
+claims of statistical superiority.
+
+The contributions are: (1) an open-source implementation of PRR, ROR, BCPNN
+IC025, and simplified EBGM/EB05 for public FAERS data; (2) a backtest harness
+over four temporal cutoffs; (3) a direct benchmark with bootstrap confidence
+intervals; (4) a documented robust filter that separates proxy source diversity
+from strict structural evidence; and (5) a Docker and conda reproducibility
+package designed for a consumer Apple Silicon laptop.
 
 \section{Background}
-The 2x2 contingency table for drug $D$ and reaction $R$ contains observed
-co-report count $a$, drug-without-reaction count $b$, reaction-without-drug
-count $c$, and all-other count $d$. We evaluate PRR, ROR, BCPNN IC025, and
-simplified EBGM/EB05.
+For a drug $D$ and reaction $R$, let $a$ be the co-report count, $b$ the count
+for $D$ without $R$, $c$ the count for $R$ without $D$, and $d$ all other
+reports. The proportional reporting ratio is:
+\begin{equation}
+\mathrm{PRR} = \frac{a/(a+b)}{c/(c+d)}.
+\end{equation}
+The reporting odds ratio is:
+\begin{equation}
+\mathrm{ROR} = \frac{a d}{b c}.
+\end{equation}
+PRR and ROR are classical disproportionality methods for spontaneous reporting
+data \cite{evans2001prr,vanpuijenbroek2002ror}. The BCPNN information component
+uses an observed-to-expected ratio on the log base-2 scale:
+\begin{equation}
+\mathrm{IC} = \log_2 \left(\frac{a}{E}\right), \quad
+E = \frac{(a+b)(a+c)}{a+b+c+d}.
+\end{equation}
+This work uses an IC025 lower-bound approximation as the BCPNN threshold
+\cite{bate1998bcpnn}. The simplified EBGM baseline uses a single-component
+Gamma-Poisson posterior:
+\begin{equation}
+\lambda \mid a,E \sim \mathrm{Gamma}(\alpha + a, \beta + E),
+\end{equation}
+with EB05 defined as the posterior fifth percentile. Production MGPS and EBGM
+systems use richer empirical Bayes mixture models \cite{dumouchel1999mgps,
+szarfman2002screening,noren2013shrinkage}.
 
 \section{Related Work}
-Classical disproportionality methods include PRR \cite{evans2001prr}, ROR
-\cite{vanpuijenbroek2002ror}, BCPNN \cite{bate1998bcpnn}, and MGPS
-\cite{dumouchel1999mgps}. Reviews of spontaneous-reporting data mining discuss
-the strengths and limitations of these methods \cite{hauben2009review,
-sakaeda2013faers,noren2013shrinkage}.
+Comparative pharmacovigilance studies have repeatedly shown that no single
+disproportionality method is uniformly best across all signal-detection
+settings \cite{vanpuijenbroek2002ror,hauben2009review,bate2009quantitative}.
+Modern work combines spontaneous reports with electronic health records, drug
+knowledge bases, and machine learning \cite{harpaz2012novel,wang2009active,
+tatonetti2012data,banda2016curated,ietswaart2020machine}. MedDRA terminology
+standardization is central to production surveillance, but licensed hierarchy
+access is a barrier for open-source replication \cite{brown1999meddra,
+mozzicato2009meddra}. This paper is positioned as a reproducibility benchmark,
+not as a new signal-detection algorithm. That framing is aligned with broader
+concerns about reproducibility in machine learning and health research
+\cite{pineau2021reproducibility,beam2020reproducibility}.
 
 \section{Methods}
-The pipeline downloads FAERS quarterly data, parses nested JSON into flattened
-drug/reaction observations, computes PRR/ROR in PySpark and Hive/HQL, trains an
-XGBoost ranking model, and stores dashboard-ready outputs. Robust filtering
-requires minimum case count, minimum country-count source proxy, seriousness
-ratio, bounded PRR/ROR, and non-negative chi-square.
+\subsection{Data}
+The pipeline downloaded public FAERS quarterly data, parsed nested JSON into
+flattened drug/reaction observations, and generated an aggregate feature table
+with 4,286,074 drug-reaction rows and 20,864,371 scanned co-report
+observations. The warning reference file contains 56 hand-curated historical FDA
+safety actions. Warning source deep links remain an explicit curation task for
+most entries and are documented in \texttt{data/reference/warnings\_todo.md}.
+
+\subsection{Signal Generation}
+PRR/ROR and chi-square calculations were implemented in PySpark and mirrored in
+Hive/HQL. BCPNN IC025 and EBGM/EB05 were implemented in Python for benchmark
+comparisons. XGBoost used engineered features including case count, case growth,
+seriousness ratio, death ratio, geographic spread, PRR, ROR, chi-square, and
+concurrent signal count.
+
+\subsection{Robust Filtering}
+The proxy robust filter required case count at least 5, country-count source
+proxy at least 3, seriousness ratio at least 0.01, bounded PRR/ROR values, and
+non-negative chi-square. A stricter structural filter additionally required
+$b>0$ and $c>0$ so that the observed co-report count did not fully equal both
+margins. The proxy filter is reported separately from the structural filter
+because public FAERS extracts do not expose clean independent reporter IDs.
+
+\subsection{Backtest Protocol}
+Cutoffs were evaluated at 2018-12-31, 2019-12-31, 2020-12-31, and 2021-12-31.
+Warnings after each cutoff were treated as future targets. Metrics included
+threshold recall, precision, median lead time, and recall@50/100. Bootstrap
+95\% confidence intervals used 1000 resamples with seed 42. McNemar's test was
+used for paired threshold-detection agreement, and DeLong's test was used for
+paired ROC AUC comparisons \cite{delong1988roc,sun2014delong,efron1993bootstrap}.
+
+\section{Experimental Setup}
+Experiments ran locally on macOS Apple Silicon using Python 3.11 in a conda
+environment. Docker smoke tests validated the HDFS, Hive, PostgreSQL, API, and
+Streamlit services on real Parquet samples. The reproducibility package includes
+\texttt{requirements.lock}, \texttt{Dockerfile.research}, deterministic seeds,
+and make targets for regenerating evaluation tables and figures.
+
+\section{Results}
+\subsection{Signal Quality}
+Naive PRR/ROR produced 505,220 raw threshold signals from 4,286,074 feature
+rows. The proxy robust filter retained 100,090 signals, an approximate 19.8\%
+pass rate among raw PRR/ROR signals. In the current regenerated artifact, the
+strict structural filter retained the same 100,090 rows, indicating that the
+remaining robust candidates have nonzero off-diagonal 2x2 margins. The dominant
+rejection reasons were too few cases and low country-count source diversity.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\linewidth]{../docs/figures/artifact_rate_before_after.png}
-\caption{Estimated artifact rate before and after robust signal filtering.}
+\includegraphics[width=0.82\linewidth]{../docs/figures/artifact_rate_before_after.png}
+\caption{Estimated artifact rate before and after robust signal filtering. The
+proxy robust filter removes low-count, low-diversity, low-seriousness, extreme
+ratio, and invalid chi-square candidates before ranking.}
+\label{fig:artifact}
 \end{figure}
 
-\section{Experimental Setup}
-Experiments run locally on macOS Apple Silicon with Python 3.11. The Docker
-stack smoke test validates HDFS, Hive, PostgreSQL, API, and Streamlit services
-on a small real Parquet sample. Full feature generation runs locally with
-PySpark.
+\subsection{Method Comparison}
+Table~\ref{tab:methods} reports threshold results. BCPNN IC025 catches the most
+future warnings at the 2018, 2019, and 2020 cutoffs, but the confidence
+intervals are wide because each cutoff has only 7--11 future reference warnings.
 
-\section{Results}
-\input{../docs/tables/table_methods.tex}
+\begin{table}[h]
+\centering
+\caption{Threshold-method backtest results with percentile bootstrap 95\%
+confidence intervals ($n=1000$, seed 42). Precision is low because threshold
+methods flag large candidate sets.}
+\label{tab:methods}
+\resizebox{\textwidth}{!}{\input{../docs/tables/table_methods.tex}}
+\end{table}
 
-\input{../docs/tables/table_caught_warnings.tex}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/recall_by_method_with_ci.png}
+\caption{Recall by threshold method and cutoff with bootstrap confidence
+intervals. BCPNN IC025 has the highest point estimate at each cutoff with
+post-cutoff reference warnings, but intervals overlap.}
+\label{fig:recall}
+\end{figure}
+
+\subsection{Ranking and Lead Time}
+ROC and precision-recall curves summarize ranking behavior at the 2020 cutoff.
+The ranking plots should be interpreted descriptively because the positive
+class is very small.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/roc_curves_2020.png}
+\caption{ROC curves for candidate ranking methods at the 2020-12-31 cutoff.}
+\label{fig:roc}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/pr_curves_2020.png}
+\caption{Precision-recall curves at the 2020-12-31 cutoff. Precision remains
+low because public FAERS candidate space is large relative to the curated
+warning set.}
+\label{fig:pr}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/lead_time_histogram.png}
+\caption{Lead-time distribution for caught historical FDA warning pairs. Lead
+time is measured from the first available quarter-end signal crossing when
+available.}
+\label{fig:lead}
+\end{figure}
+
+\subsection{Case Study}
+The main 2020-cutoff case study is UPADACITINIB--MYOCARDIAL INFARCTION, which
+crossed the signal threshold on 2020-03-31 and had a reference FDA action date
+of 2021-09-01.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/signal_evolution_upadacitinib.png}
+\caption{Temporal signal evolution for UPADACITINIB--MYOCARDIAL INFARCTION.
+The signal crossed the configured disproportionality threshold before the
+reference FDA action date.}
+\label{fig:upadacitinib}
+\end{figure}
+
+\begin{table}[h]
+\centering
+\caption{Caught warning case study for the 2020 cutoff.}
+\label{tab:caught}
+\resizebox{\textwidth}{!}{\input{../docs/tables/table_caught_warnings.tex}}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{../docs/figures/sensitivity.png}
+\caption{Threshold sensitivity analysis for signal-detection settings.}
+\label{fig:sensitivity}
+\end{figure}
 
 \section{Discussion}
-% TODO: Discuss why false positives dominate public FAERS signal detection,
-% confounding by indication, and why robust filtering improves interpretability.
+BCPNN IC025 outperformed the other evaluated threshold methods in point
+estimate because shrinkage protects against sparse-table overreaction while
+remaining more sensitive than requiring simultaneous PRR, ROR, and chi-square
+criteria. This is consistent with prior arguments that shrinkage
+observed-to-expected methods are more stable on sparse spontaneous-report
+tables \cite{bate1998bcpnn,noren2013shrinkage}.
+
+False positives were not random. The highest-ranked non-warning signals often
+reflected confounding by indication: the reported reaction was closely related
+to the condition for which the drug is used. Examples include anticoagulation
+or oncology products co-reported with disease-management terms. This is a
+structural limitation of spontaneous reporting data, not a simple model bug.
+Disproportionality cannot separate indication, disease progression,
+protopathic bias, and causal adverse reactions without external clinical
+context \cite{salas1999confounding,salvo2013signal}.
+
+The proxy robust filter is a pragmatic compromise. A strict structural filter
+requiring nonzero off-diagonal margins is scientifically cleaner, but it answers
+a different question than source diversity. Keeping both flags in the output
+makes that distinction visible: the proxy filter measures observable reporting
+spread, while the structural filter verifies that the 2x2 contingency table is
+not margin-saturated.
 
 \section{Limitations}
-The warning reference set is small and hand-curated. FAERS reports do not prove
-causality. Public FAERS extracts do not expose a clean reporter-source ID, so
-country count is used as a conservative source-diversity proxy. The current
-validated result catches only 1 of 7 post-cutoff warnings for the 2020 cutoff.
+The ground truth is small: the curated file contains 56 safety actions, and
+only 7 are future targets at the 2020 cutoff. Most warning source URLs still
+need FDA deep-link verification. Term matching is mostly exact-string matching
+with only limited MedDRA-style grouping. The EBGM implementation is a simplified
+single-component Gamma-Poisson baseline rather than production MGPS. Country
+count is a source-diversity proxy, not a reporter identifier. No result in this
+paper should be interpreted as causal evidence or clinical guidance.
 
 \section{Reproducibility}
-All code is available in the accompanying repository. Generated feature Parquet
-and raw FAERS files are intentionally excluded from Git. See
-\texttt{docs/REPRODUCIBILITY.md}.
+The full workflow is available in the accompanying repository. The primary
+reproduction entry point is \texttt{make reproduce-paper}, assuming feature
+Parquet artifacts are present. Raw FAERS files and generated feature Parquet are
+excluded from Git because of size. The Docker research image and
+\texttt{docs/REPRODUCIBILITY.md} document the replay environment.
 
 \section{Conclusion}
-% TODO: Summarize the reproducible workflow contribution and future work:
-% stronger ground truth, MedDRA grouping, and richer empirical Bayes baselines.
+This work provides a reproducible public-FAERS benchmark for classical and
+modern pharmacovigilance signal detection. BCPNN IC025 is the strongest current
+threshold method in point estimate, detecting 2 of 7 future warnings at the
+2020 cutoff, including one signal 519 days before its reference FDA action.
+The result is intentionally framed as a reproducible benchmark with small-sample
+uncertainty, not as a high-recall clinical warning system. Future work should
+expand the verified warning set, improve MedDRA grouping, implement full
+empirical Bayes MGPS, and evaluate confounding-aware temporal methods.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 \end{document}
-

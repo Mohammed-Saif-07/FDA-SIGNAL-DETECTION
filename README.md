@@ -19,7 +19,7 @@ back-test detected signals against historical FDA warnings.
 
 **Live demo:** [fda-signal-detection.streamlit.app](https://fda-signal-detection.streamlit.app/)
 
-**Current backtest headline:** `Pipeline detected 14% of FDA warnings, median 17.3 months early.`
+**Current research headline:** `BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the 2020-12-31 cutoff (28.6% recall, 95% CI [0.00, 0.71]), including UPADACITINIB - MYOCARDIAL INFARCTION at 17.3 months lead time.`
 
 ---
 
@@ -160,16 +160,17 @@ From the local `2020-12-31` cutoff backtest:
 | Metric | Value |
 | --- | ---: |
 | Future FDA warnings evaluated | 7 |
-| Warnings caught | 1 |
-| Recall | 14.3% |
+| BCPNN IC025 warnings caught | 2 |
+| BCPNN IC025 recall | 28.6% |
+| BCPNN IC025 95% CI | [0.00, 0.71] |
+| PRR/ROR warnings caught | 1 |
 | Median signal-detection lead time | 519 days |
 | Median months early | 17.3 months |
-| Precision @ 100 | 2.0% |
+| BCPNN threshold precision | ~0.0016% |
 
-The detected case was `UPADACITINIB` + `MYOCARDIAL INFARCTION`, with an FDA
-warning date of `2021-09-01`. Its PRR/ROR signal first crossed threshold at
-the `2020-03-31` quarter end, giving a 519-day, or 17.3-month, signal lead
-time.
+The clearest detected case was `UPADACITINIB` + `MYOCARDIAL INFARCTION`, with
+an FDA warning date of `2021-09-01`. Its signal first crossed threshold at the
+`2020-03-31` quarter end, giving a 519-day, or 17.3-month, signal lead time.
 
 Generated report:
 
@@ -180,11 +181,14 @@ data/processed/backtest_report.json
 Headline:
 
 ```text
-Pipeline detected 14% of FDA warnings, median 17.3 months early.
+BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the 2020-12-31 cutoff
+(28.6% recall, 95% CI [0.00, 0.71]), including UPADACITINIB - MYOCARDIAL
+INFARCTION at 17.3 months lead time.
 ```
 
 This is intentionally reported as a modest, reproducible result. The project
-does not claim 73% recall in its current state.
+does not claim 73% recall in its current state, and the confidence intervals are
+wide because the curated post-cutoff reference set is small.
 
 ## Cite This Work
 
@@ -231,8 +235,10 @@ Main `2020-12-31` results:
 
 | Method | Evaluation | Future Warnings | Caught | Recall | Precision | Median Lead Time |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| BCPNN IC025 threshold | threshold | 7 | 2 | 28.6% | ~0.0016% | 519 days |
 | PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0002% | 519 days |
 | Robust PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0010% | 519 days |
+| EBGM/EB05 threshold | threshold | 7 | 1 | 14.3% | ~0.0005% | 519 days |
 | XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 519 days |
 | XGBoost top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 | PRR/ROR top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |

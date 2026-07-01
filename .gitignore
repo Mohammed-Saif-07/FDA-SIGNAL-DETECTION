@@ -9,6 +9,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .ipynb_checkpoints/
+*.bak
 
 # FAERS raw data (huge — do not commit)
 data/raw/*.zip
@@ -27,6 +28,17 @@ ml/models/*.bin
 *.log
 logs/
 airflow-logs/
+
+# Paper build artifacts
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.pdf
+dist/
 
 # OS
 .DS_Store

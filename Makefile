@@ -2,7 +2,7 @@
 # FDA Drug Safety Signal Detection — convenience targets
 # =====================================================================
 
-.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval signal-quality bcpnn ebgm bootstrap compare-methods sensitivity figures tables test freeze docker-research paper reproduce-paper report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
+.PHONY: help up down logs ps hive-init docker-smoke smoke-docker smoke-local research-eval signal-quality bcpnn ebgm bootstrap compare-methods sensitivity figures tables test freeze docker-research paper arxiv-package reproduce-paper report download parse hdfs hive signals features train predict backtest dashboard api clean local-quarter local-backtest-2020 local-backtest-2020-wide local-finish-2020
 
 CONDA_RUN ?= conda run -n fda
 SPARK_HOME ?= /opt/anaconda3/envs/fda/lib/python3.11/site-packages/pyspark
@@ -82,6 +82,16 @@ docker-research: ## Build reproducible research image
 
 paper: ## Build paper PDF if latexmk is installed
 	cd paper && latexmk -pdf paper.tex
+
+arxiv-package: paper ## Build arXiv upload bundle from compiled paper artifacts
+	rm -rf dist/arxiv dist/paper_arxiv.tar.gz
+	mkdir -p dist/arxiv/figures dist/arxiv/tables
+	cp paper/paper.tex paper/references.bib dist/arxiv/
+	cp paper/paper.bbl dist/arxiv/ 2>/dev/null || true
+	cp docs/figures/*.png dist/arxiv/figures/
+	cp docs/tables/*.tex dist/arxiv/tables/
+	cd dist && tar -czf paper_arxiv.tar.gz arxiv
+	@echo "Upload dist/paper_arxiv.tar.gz to arxiv.org after reviewing paper/paper.pdf."
 
 reproduce-paper: research-eval compare-methods sensitivity figures tables ## Regenerate paper artifacts from local feature parquet
 

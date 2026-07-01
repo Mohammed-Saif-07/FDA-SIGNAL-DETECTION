@@ -5,16 +5,17 @@
 This project implements a zero-cost, locally reproducible pharmacovigilance
 pipeline for detecting drug safety signals in FDA FAERS adverse-event data. The
 pipeline parses nested FAERS JSON, creates flattened drug/reaction Parquet
-tables, computes PRR/ROR disproportionality signals, trains an XGBoost ranking
-model, applies a transparent robust signal-quality filter, and backtests
-detected signals against a curated FDA warning reference set. On a
-`2020-12-31` cutoff, the threshold-based PRR/ROR and XGBoost
-probability workflows each detected 1 of 7 post-cutoff FDA warnings. The
-PRR/ROR-detected warning first crossed the signal threshold at the `2020-03-31`
-quarter end, 519 days, or 17.3 months, before official FDA action. Results show that the system
-is reproducible and useful for signal exploration, while also demonstrating the
-low-recall and high-false-positive limitations of public FAERS
-disproportionality analysis.
+tables, computes PRR/ROR, BCPNN IC025, simplified EBGM/EB05, and XGBoost
+signals, applies a transparent robust signal-quality filter, and backtests
+detected signals against a curated FDA warning reference set. On the
+`2020-12-31` cutoff, BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings
+(28.6% recall, bootstrap 95% CI [0.00, 0.71]), exceeding PRR/ROR, EBGM/EB05,
+and XGBoost, each of which detected 1 of 7. The clearest case study,
+`UPADACITINIB` + `MYOCARDIAL INFARCTION`, first crossed threshold at the
+`2020-03-31` quarter end, 519 days, or 17.3 months, before the reference FDA
+action. Results show that the system is reproducible and useful for signal
+exploration, while also demonstrating the low-precision, high-false-positive,
+small-ground-truth limitations of public FAERS disproportionality analysis.
 
 ## Research Question
 
@@ -36,7 +37,7 @@ The project implements:
 
 - PySpark ingestion and cleaning of public FAERS adverse-event files.
 - Feature engineering over flattened drug/reaction pairs.
-- PRR, ROR, and chi-square signal metrics.
+- PRR, ROR, chi-square, BCPNN IC025, and simplified EBGM/EB05 signal metrics.
 - Overflow-safe chi-square computation in Spark and Hive.
 - Robust PRR/ROR filtering using case count, seriousness, ratio bounds, and
   country-count source-diversity proxy.
@@ -137,26 +138,28 @@ For the main `2020-12-31` cutoff:
 
 | Method | Evaluation | Future Warnings | Caught | Recall | Precision | Median Lead Time |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| BCPNN IC025 threshold | threshold | 7 | 2 | 28.6% | ~0.0016% | 519 days |
 | PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0002% | 519 days |
 | Robust PRR/ROR threshold | threshold | 7 | 1 | 14.3% | ~0.0010% | 519 days |
+| EBGM/EB05 threshold | threshold | 7 | 1 | 14.3% | ~0.0005% | 519 days |
 | XGBoost >= 0.5 | threshold | 7 | 1 | 14.3% | ~0.0009% | 519 days |
 | XGBoost top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 | PRR/ROR top 100 | ranking | 7 | 0 | 0.0% | 0.0% | n/a |
 
 The headline result is therefore:
 
-> Using a `2020-12-31` cutoff, the pipeline detected 1 of 7 post-cutoff FDA
-> warnings. The PRR/ROR signal for the detected warning first crossed threshold
-> at quarter end `2020-03-31`, 519 days, or 17.3 months, before official FDA
-> action.
+> BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the `2020-12-31`
+> cutoff (28.6% recall, 95% CI [0.00, 0.71]). The clearest detected warning,
+> UPADACITINIB + MYOCARDIAL INFARCTION, first crossed threshold at quarter end
+> `2020-03-31`, 519 days, or 17.3 months, before the reference FDA action.
 
 This is a modest result. It supports the reproducibility and engineering value
 of the system, but not a claim of high predictive accuracy.
 
-The robust filter reduced raw PRR/ROR candidates from 505,220 to 100,090
-without losing the detected post-cutoff warning. It also removed the earlier
-single-country/low-diversity consumer-product artifacts from the dashboard
-export. Because the public flattened FAERS table does not include a clean
+The robust filter reduced raw PRR/ROR candidates from 505,220 to 100,090. In
+the current regenerated feature table, the strict structural filter retained the
+same 100,090 rows, so proxy-only robust signals were not present in this run.
+Because the public flattened FAERS table does not include a clean
 reporter-source identifier, `countries_count` is explicitly labelled as a
 source-diversity proxy rather than true independent source count.
 
@@ -182,9 +185,8 @@ not FDA's proprietary production MGPS.
 - `data/processed/delong_pvalues.csv`
 
 McNemar values are computed on aggregate cutoff-level detection indicators. The
-DeLong matrix is marked non-applicable until individual warning-level score
-exports are added; the repository does not fabricate AUC-difference p-values
-from aggregate summaries.
+DeLong matrix is computed from `data/processed/method_scores_2020.parquet`,
+which stores one label and method score per candidate pair at the 2020 cutoff.
 
 ## Sensitivity Analysis
 
@@ -221,8 +223,8 @@ not ranking or thresholding high enough.
 - False-positive volume is high: hundreds of thousands of PRR/ROR threshold
   candidates do not match the curated FDA warning reference set.
 - Robust filtering reduces obvious artifact-like rankings but remains a
-  heuristic; it should be compared against BCPNN/IC and EBGM/MGPS baselines for
-  a stronger paper.
+  heuristic; BCPNN/IC and simplified EBGM/EB05 are included as baseline
+  comparisons, while full production MGPS remains future work.
 - Docker Hive smoke validates schema and HQL execution, but the current Docker
   Hive table is not loaded with the full FAERS Parquet sample.
 
@@ -256,6 +258,6 @@ conda run -n fda python ml/evaluate.py --cutoff 2020-12-31
 
 The project is research-ready as a reproducible applied systems paper or
 capstone report, provided the claim stays honest: it demonstrates a local,
-zero-cost FAERS signal detection workflow and catches one post-cutoff FDA
-warning 17.3 months early, while exposing the practical limitations of PRR/ROR
-and ML ranking on noisy public pharmacovigilance data.
+zero-cost FAERS signal detection workflow, shows BCPNN IC025 as the strongest
+current threshold baseline on a small warning set, and exposes the practical
+limitations of PRR/ROR and ML ranking on noisy public pharmacovigilance data.

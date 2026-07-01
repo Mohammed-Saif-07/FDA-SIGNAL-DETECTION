@@ -1,5 +1,5 @@
 {
-  "run_date": "2026-06-29",
+  "run_date": "2026-06-30",
   "features_rows": 4286074,
   "warning_reference_rows": 56,
   "predictions_rows": 4286074,
@@ -21,6 +21,7 @@
   "outputs": {
     "temporal_warning_signals_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/temporal_warning_signals.csv",
     "summary_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/research_eval_summary.csv",
+    "method_scores_parquet": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/method_scores_2020.parquet",
     "case_studies_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/case_studies.csv",
     "missed_warnings_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/missed_warnings.csv",
     "false_positive_csv": "/Users/mohammedsaif/Desktop/fall prep/fda-signal-detection/data/processed/false_positive_analysis.csv"
@@ -35,16 +36,16 @@
       "warnings_caught": 0,
       "recall": 0.0,
       "precision": 0.0,
-      "median_days_early": NaN,
-      "median_months_early": NaN,
+      "median_days_early": null,
+      "median_months_early": null,
       "lead_time_basis": "cutoff",
       "ranked_candidates": 505220,
       "recall_lo95": 0.0,
       "recall_hi95": 0.0,
       "precision_lo95": 0.0,
       "precision_hi95": 0.0,
-      "lead_time_lo95": NaN,
-      "lead_time_hi95": NaN
+      "lead_time_lo95": null,
+      "lead_time_hi95": null
     },
     {
       "cutoff": "2020-12-31",
@@ -55,16 +56,16 @@
       "warnings_caught": 0,
       "recall": 0.0,
       "precision": 0.0,
-      "median_days_early": NaN,
-      "median_months_early": NaN,
+      "median_days_early": null,
+      "median_months_early": null,
       "lead_time_basis": "cutoff",
       "ranked_candidates": 100090,
       "recall_lo95": 0.0,
       "recall_hi95": 0.0,
       "precision_lo95": 0.0,
       "precision_hi95": 0.0,
-      "lead_time_lo95": NaN,
-      "lead_time_hi95": NaN
+      "lead_time_lo95": null,
+      "lead_time_hi95": null
     },
     {
       "cutoff": "2020-12-31",
@@ -75,16 +76,16 @@
       "warnings_caught": 0,
       "recall": 0.0,
       "precision": 0.0,
-      "median_days_early": NaN,
-      "median_months_early": NaN,
+      "median_days_early": null,
+      "median_months_early": null,
       "lead_time_basis": "cutoff",
       "ranked_candidates": 4286074,
       "recall_lo95": 0.0,
       "recall_hi95": 0.0,
       "precision_lo95": 0.0,
       "precision_hi95": 0.0,
-      "lead_time_lo95": NaN,
-      "lead_time_hi95": NaN
+      "lead_time_lo95": null,
+      "lead_time_hi95": null
     },
     {
       "cutoff": "2020-12-31",
@@ -147,6 +148,7 @@
       "lead_time_hi95": 519.0
     }
   ],
+  "primary_headline": "BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the 2020-12-31 cutoff (28.6% recall, 95% CI [0.00, 0.71]), including UPADACITINIB - MYOCARDIAL INFARCTION at 17.3 months lead time. This exceeds PRR/ROR (1/7), EBGM/EB05 (1/7), and XGBoost (1/7) at the same cutoff.",
   "limitations": [
     "FAERS disproportionality is signal detection, not causal inference.",
     "Lead time uses signal_first_detected_date when available; older feature files fall back to the evaluation cutoff.",

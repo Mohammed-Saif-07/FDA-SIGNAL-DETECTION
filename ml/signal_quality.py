@@ -39,12 +39,26 @@ def add_signal_quality(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     out = df.copy()
-    for col in ["case_count", "countries_count", "serious_ratio", "death_ratio", "prr", "ror", "prr_chi_square"]:
+    for col in [
+        "case_count",
+        "drug_total",
+        "reaction_total",
+        "countries_count",
+        "serious_ratio",
+        "death_ratio",
+        "prr",
+        "ror",
+        "prr_chi_square",
+    ]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
 
     out["source_proxy_count"] = out.get("countries_count", pd.Series(0, index=out.index)).fillna(0).astype(int)
     out["is_single_source_proxy"] = out["source_proxy_count"].le(1)
+    if "drug_total" not in out.columns and {"drug_name", "case_count"}.issubset(out.columns):
+        out["drug_total"] = out.groupby("drug_name")["case_count"].transform("sum")
+    if "reaction_total" not in out.columns and {"reaction_term", "case_count"}.issubset(out.columns):
+        out["reaction_total"] = out.groupby("reaction_term")["case_count"].transform("sum")
 
     signal_mask = (
         out["case_count"].ge(3)
@@ -65,6 +79,13 @@ def add_signal_quality(df: pd.DataFrame) -> pd.DataFrame:
         out.loc[out["artifact_reason"].eq("passes_robust_filter") & mask.fillna(True), "artifact_reason"] = reason
 
     out["passes_robust_filter"] = out["artifact_reason"].eq("passes_robust_filter")
+    drug_total = out.get("drug_total", pd.Series(np.nan, index=out.index))
+    reaction_total = out.get("reaction_total", pd.Series(np.nan, index=out.index))
+    out["passes_structural_filter"] = (
+        out["passes_robust_filter"]
+        & pd.to_numeric(drug_total, errors="coerce").gt(out["case_count"])
+        & pd.to_numeric(reaction_total, errors="coerce").gt(out["case_count"])
+    )
     serious_component = out["serious_ratio"].fillna(0).clip(lower=0, upper=1)
     death_component = out["death_ratio"].fillna(0).clip(lower=0, upper=1)
     out["robust_signal_score"] = (
@@ -88,10 +109,13 @@ def summarize_quality(df: pd.DataFrame) -> pd.DataFrame:
         ).sum()
     )
     robust = int(quality["passes_robust_filter"].sum())
+    structural = int(quality["passes_structural_filter"].sum())
     rows = [
         {"metric": "rows", "value": int(len(quality))},
         {"metric": "raw_prr_ror_signals", "value": total_signals},
         {"metric": "robust_signals", "value": robust},
+        {"metric": "structural_signals", "value": structural},
+        {"metric": "proxy_only_signals", "value": robust - structural},
         {
             "metric": "robust_pass_rate_among_raw_signals",
             "value": robust / total_signals if total_signals else 0.0,

@@ -1,15 +1,46 @@
 {
-  "run_date": "2026-06-29",
+  "run_date": "2026-06-30",
   "train_cutoff": "2020-12-31",
+  "primary_method": "bcpnn_ic025",
   "future_warnings_count": 7,
-  "rule_recall": 0.14285714285714285,
-  "rule_warnings_caught": 1,
-  "rule_median_days_early": 519,
-  "ml_recall": 0.14285714285714285,
-  "ml_median_days_early": 244,
-  "precision_at_100": 0.02,
+  "warnings_caught": 2,
+  "recall": 0.2857142857142857,
+  "recall_lo95": 0.0,
+  "recall_hi95": 0.7142857142857143,
   "median_days_early": 519,
   "median_months_early": 17.3,
   "lead_time_basis": "signal_first_detected_date",
-  "headline": "Pipeline detected 14% of FDA warnings, median 17.3 months early."
+  "method_ranking": [
+    {
+      "method": "bcpnn_ic025_threshold",
+      "aggregate_recall": 0.8584415584415583,
+      "aggregate_warnings_caught": 8,
+      "aggregate_future_warnings": 31
+    },
+    {
+      "method": "ebgm_eb05_threshold",
+      "aggregate_recall": 0.5246753246753246,
+      "aggregate_warnings_caught": 5,
+      "aggregate_future_warnings": 31
+    },
+    {
+      "method": "prr_ror_threshold",
+      "aggregate_recall": 0.5246753246753246,
+      "aggregate_warnings_caught": 5,
+      "aggregate_future_warnings": 31
+    },
+    {
+      "method": "robust_prr_ror_threshold",
+      "aggregate_recall": 0.5246753246753246,
+      "aggregate_warnings_caught": 5,
+      "aggregate_future_warnings": 31
+    },
+    {
+      "method": "xgboost_threshold_0_5",
+      "aggregate_recall": 0.5246753246753246,
+      "aggregate_warnings_caught": 5,
+      "aggregate_future_warnings": 31
+    }
+  ],
+  "headline": "BCPNN IC025 detected 2 of 7 post-cutoff FDA warnings at the 2020-12-31 cutoff (28.6% recall, 95% CI [0.00, 0.71]), including UPADACITINIB - MYOCARDIAL INFARCTION at 17.3 months lead time. This exceeds PRR/ROR (1/7), EBGM/EB05 (1/7), and XGBoost (1/7) at the same cutoff."
 }

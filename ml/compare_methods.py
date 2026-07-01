@@ -13,9 +13,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
 
+from delong import delong_test
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SUMMARY = ROOT / "data" / "processed" / "research_eval_summary.csv"
+METHOD_SCORES = ROOT / "data" / "processed" / "method_scores_2020.parquet"
 OUT = ROOT / "data" / "processed"
 
 
@@ -52,17 +55,27 @@ def main() -> int:
         mcnemar.loc[b, a] = p
     mcnemar.to_csv(OUT / "mcnemar_pvalues.csv")
 
-    # DeLong requires individual y_true/y_score arrays per method. The current
-    # research summary is aggregate, so write an explicit non-applicable matrix
-    # instead of fabricating p-values.
-    delong = pd.DataFrame(np.nan, index=methods, columns=methods)
-    for method in methods:
-        delong.loc[method, method] = 1.0
+    if not METHOD_SCORES.exists():
+        raise FileNotFoundError(f"Missing {METHOD_SCORES}; run make research-eval first")
+    scores = pd.read_parquet(METHOD_SCORES)
+    score_methods = [
+        col
+        for col in scores.columns
+        if col not in {"pair_key", "drug_name", "reaction_term", "is_post_cutoff_warning"}
+    ]
+    y_true = scores["is_post_cutoff_warning"].astype(int).to_numpy()
+    delong = pd.DataFrame(1.0, index=score_methods, columns=score_methods)
+    for a, b in combinations(score_methods, 2):
+        try:
+            _, _, _, p = delong_test(y_true, scores[a].to_numpy(), scores[b].to_numpy())
+        except ValueError:
+            p = np.nan
+        delong.loc[a, b] = p
+        delong.loc[b, a] = p
     delong.to_csv(OUT / "delong_pvalues.csv")
-    (OUT / "delong_pvalues.README.txt").write_text(
-        "DeLong AUC comparison is not computed from aggregate research_eval_summary.csv. "
-        "Run a future individual-score export to enable this test.\n"
-    )
+    readme = OUT / "delong_pvalues.README.txt"
+    if readme.exists():
+        readme.unlink()
     print(f"Wrote {OUT / 'mcnemar_pvalues.csv'}")
     print(f"Wrote {OUT / 'delong_pvalues.csv'}")
     return 0
@@ -70,4 +83,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

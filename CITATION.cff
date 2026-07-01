@@ -5,8 +5,16 @@ type: software
 authors:
   - family-names: Mohammed
     given-names: Saif
+    affiliation: Seattle University
 repository-code: "https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION"
 abstract: "Open-source FAERS pharmacovigilance workflow for reproducible PRR/ROR signal detection, robust artifact filtering, and historical FDA warning backtesting."
 license: MIT
 version: 0.1.0
-date-released: 2026-06-29
+date-released: 2026-06-30
+keywords:
+  - FAERS
+  - pharmacovigilance
+  - drug safety
+  - signal detection
+  - PySpark
+  - Hive
