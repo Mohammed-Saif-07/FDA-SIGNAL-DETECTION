@@ -32,7 +32,10 @@ the optional HDFS/Hive/PostgreSQL/API/Streamlit service smoke test.
 - macOS Apple Silicon tested through conda `fda` Python 3.11.
 - Docker Compose definitions and smoke targets are included for
   HDFS/Hive/PostgreSQL/API/Streamlit validation. The July 1, 2026 verification
-  run could not execute Docker because the local Docker daemon was not running.
+  run passed `make smoke-docker` on Docker Desktop using a 5,000-row real
+  Parquet sample. The smoke run created the expected Hive tables, executed the
+  PRR/ROR HQL, produced 33 smoke-sample `STRONG_SIGNAL` rows, and validated
+  FastAPI, HDFS, and Streamlit health checks.
 - No paid cloud services or GPUs are required.
 
 ## Data

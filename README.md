@@ -125,7 +125,10 @@ dashboard/data/backtests.csv
 ```
 
 On my Mac, the full pipeline runs locally with Docker/PySpark/PostgreSQL and can
-regenerate those dashboard snapshots from real FAERS data.
+regenerate those dashboard snapshots from real FAERS data. `make smoke-docker`
+was verified on July 1, 2026: it started HDFS, HiveServer2, PostgreSQL, FastAPI,
+and Streamlit, loaded a 5,000-row Parquet smoke sample into Hive, ran the PRR/ROR
+HQL, and validated service health checks.
 
 ---
 
@@ -484,7 +487,8 @@ What is already defensible:
 - overflow-safe chi-square computation in both Spark and Hive
 - robust PRR/ROR quality filter to reduce obvious artifact-like rankings
 - Docker Compose files and smoke-test target for demonstrating the distributed
-  architecture locally
+  architecture locally; the July 1, 2026 Docker smoke run passed on HDFS, Hive,
+  PostgreSQL, FastAPI, and Streamlit with a 5,000-row real Parquet sample
 - PostgreSQL/API/dashboard serving layer
 - honest backtest against curated FDA warning references
 - explicit false-positive and missed-warning outputs
@@ -494,7 +498,8 @@ What must improve before claiming strong predictive performance:
 - expand the FDA warning reference set beyond the current 56 curated rows
 - extend quarterly first-detected dates from warning-pair validation to every
   candidate signal
-- load the Docker Hive tables with a larger real Parquet sample
+- load the Docker Hive tables with a larger real Parquet sample beyond the
+  current 5,000-row smoke validation
 - improve terminology matching between FAERS MedDRA terms and warning labels
 - report confidence intervals or bootstrap uncertainty for recall/precision
 - evaluate on more cutoffs and larger historical windows

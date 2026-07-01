@@ -138,9 +138,10 @@ paired ROC AUC comparisons \cite{delong1988roc,sun2014delong,efron1993bootstrap}
 Experiments ran locally on macOS Apple Silicon using Python 3.11 in a conda
 environment. The repository includes a Docker Compose stack and
 \texttt{make smoke-docker} target for HDFS, Hive, PostgreSQL, API, and
-Streamlit service validation on a small Parquet sample; the July 1, 2026
-verification run did not execute Docker because the local Docker daemon was not
-running. The reproducibility package includes \texttt{requirements.lock},
+Streamlit service validation. On July 1, 2026, this smoke test passed on Docker
+Desktop using a 5,000-row real Parquet sample; Hive created the expected tables,
+executed the PRR/ROR HQL, and returned 33 smoke-sample threshold signals. The
+reproducibility package includes \texttt{requirements.lock},
 \texttt{Dockerfile.research}, deterministic seeds, and make targets for
 regenerating evaluation tables and figures.
 

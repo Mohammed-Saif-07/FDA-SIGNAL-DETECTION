@@ -31,6 +31,10 @@ current artifacts.
 - `make smoke-local`: pass.
 - `make reproduce-paper`: pass.
 - `make phase4`: pass.
+- `make smoke-docker`: pass. Docker Desktop validated HDFS NameNode/DataNode,
+  Hive Metastore/HiveServer2, PostgreSQL, FastAPI, and Streamlit services on a
+  5,000-row real Parquet smoke sample; Hive created the expected tables and the
+  PRR/ROR HQL returned 33 smoke-sample `STRONG_SIGNAL` rows.
 - `make test`: 13 tests passed, with two expected warnings from an existing
   bootstrap empty-slice edge-case test.
 - `dashboard/data/signals.csv`: 2,000 exported rows; all pass both
@@ -39,9 +43,6 @@ current artifacts.
 
 ## Not Verified In The Latest Run
 
-- `make smoke-docker`: not run because Docker Desktop/daemon was not running on
-  the Mac. The repo includes Docker Compose files and a smoke-test script, but
-  the current verification record is local conda/PySpark only.
 - Local LaTeX compilation: not run because `latexmk`/`pdflatex` are not
   installed locally. Use Overleaf with the Desktop bundle.
 
@@ -52,8 +53,6 @@ current artifacts.
   56 rows still use a generic FDA drugs URL.
 - Expand the curated warning reference set beyond 56 rows.
 - Add stronger terminology normalization or MedDRA grouping for warning labels.
-- Run and record `make smoke-docker` after starting Docker Desktop.
 - Compile the paper in Overleaf and inspect table/figure layout manually.
 - Spot-check BibTeX entries against PubMed, Crossref, or Google Scholar.
 - Create a GitHub release and Zenodo DOI before using the DOI badge.
-
