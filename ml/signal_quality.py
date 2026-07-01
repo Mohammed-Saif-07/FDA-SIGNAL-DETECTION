@@ -86,6 +86,13 @@ def add_signal_quality(df: pd.DataFrame) -> pd.DataFrame:
         & pd.to_numeric(drug_total, errors="coerce").gt(out["case_count"])
         & pd.to_numeric(reaction_total, errors="coerce").gt(out["case_count"])
     )
+    # Chi-square is capped upstream at 999999.9999 to avoid numeric overflow
+    # in the Hive computation. Flag rows that hit the cap so downstream
+    # consumers know the value is a saturating sentinel rather than an
+    # accurate statistic.
+    out["prr_chi_square_capped"] = pd.to_numeric(
+        out.get("prr_chi_square", pd.Series(np.nan, index=out.index)), errors="coerce"
+    ).ge(999999.0)
     serious_component = out["serious_ratio"].fillna(0).clip(lower=0, upper=1)
     death_component = out["death_ratio"].fillna(0).clip(lower=0, upper=1)
     out["robust_signal_score"] = (

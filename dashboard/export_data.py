@@ -123,6 +123,7 @@ def export_from_local_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
         "source_proxy_count",
         "passes_robust_filter",
         "passes_structural_filter",
+        "prr_chi_square_capped",
         "artifact_reason",
         "robust_signal_score",
     ]
