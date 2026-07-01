@@ -1,13 +1,15 @@
 # Reproducibility Checklist
 
 This project is designed for local, zero-cost reproduction on macOS Apple
-Silicon using the `fda` conda environment and Docker Desktop.
+Silicon using the `fda` conda environment. Docker Desktop is required only for
+the optional HDFS/Hive/PostgreSQL/API/Streamlit service smoke test.
 
 ## What Is Reproducible From A Bare Clone
 
 - Streamlit Cloud dashboard from CSV snapshots in `dashboard/data/`.
 - Local syntax and dependency smoke checks with `make smoke-local`.
-- Docker service smoke checks with `make smoke-docker`.
+- Docker service smoke checks with `make smoke-docker` when Docker Desktop is
+  running.
 - Paper table and figure generation from committed summary artifacts.
 
 ## What Requires Local Data Regeneration
@@ -28,7 +30,9 @@ Silicon using the `fda` conda environment and Docker Desktop.
 ## Compute Environment
 
 - macOS Apple Silicon tested through conda `fda` Python 3.11.
-- Docker Desktop tested for HDFS/Hive/PostgreSQL/API/Streamlit smoke.
+- Docker Compose definitions and smoke targets are included for
+  HDFS/Hive/PostgreSQL/API/Streamlit validation. The July 1, 2026 verification
+  run could not execute Docker because the local Docker daemon was not running.
 - No paid cloud services or GPUs are required.
 
 ## Data
@@ -40,10 +44,10 @@ Silicon using the `fda` conda environment and Docker Desktop.
 
 ## Evaluation Limits
 
-- Current validated 2020 cutoff result catches 1 of 7 post-cutoff warnings:
-  UPADACITINIB + MYOCARDIAL INFARCTION.
+- Current validated 2020 cutoff result catches 2 of 7 post-cutoff warnings
+  with BCPNN IC025. The clearest case study is UPADACITINIB + MYOCARDIAL
+  INFARCTION.
 - Lead time is 519 days, or 17.3 months, measured from the first quarter-end
   where cumulative PRR/ROR crossed threshold.
 - This is pharmacovigilance signal detection, not clinical causality or
   clinical decision support.
-

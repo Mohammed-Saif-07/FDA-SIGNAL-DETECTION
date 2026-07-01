@@ -8,8 +8,8 @@
 \title{Reproducible Drug Safety Signal Detection on Public FAERS Data}
 \author{Mohammed Saif\\
 Seattle University\\
-Email: [fill before submission]\\
-ORCID: [fill before submission]}
+Email: smohammed8@seattleu.edu\\
+ORCID: pending}
 
 \begin{document}
 \maketitle
@@ -136,10 +136,13 @@ paired ROC AUC comparisons \cite{delong1988roc,sun2014delong,efron1993bootstrap}
 
 \section{Experimental Setup}
 Experiments ran locally on macOS Apple Silicon using Python 3.11 in a conda
-environment. Docker smoke tests validated the HDFS, Hive, PostgreSQL, API, and
-Streamlit services on real Parquet samples. The reproducibility package includes
-\texttt{requirements.lock}, \texttt{Dockerfile.research}, deterministic seeds,
-and make targets for regenerating evaluation tables and figures.
+environment. The repository includes a Docker Compose stack and
+\texttt{make smoke-docker} target for HDFS, Hive, PostgreSQL, API, and
+Streamlit service validation on a small Parquet sample; the July 1, 2026
+verification run did not execute Docker because the local Docker daemon was not
+running. The reproducibility package includes \texttt{requirements.lock},
+\texttt{Dockerfile.research}, deterministic seeds, and make targets for
+regenerating evaluation tables and figures.
 
 \section{Results}
 \subsection{Signal Quality}

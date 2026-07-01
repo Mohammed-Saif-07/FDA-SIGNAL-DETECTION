@@ -29,7 +29,7 @@ validation set.
 
 ## Before Submission Checklist
 
-- Replace paper author email and ORCID placeholders.
+- Replace the `ORCID: pending` paper field if an ORCID is available.
 - Spot-check every BibTeX entry in Google Scholar or PubMed.
 - Verify at least the caught warning and top missed warnings with FDA deep-link
   URLs.

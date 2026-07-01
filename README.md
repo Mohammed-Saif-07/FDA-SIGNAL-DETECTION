@@ -65,7 +65,9 @@ This project recreates that workflow locally:
 - Trains **XGBoost** to rank which safety signals are likely to become FDA
   warnings.
 - Stores results in **PostgreSQL** and serves them through **Streamlit**.
-- Runs locally for **$0** with Docker Compose and no paid cloud services.
+- Runs locally for **$0** with conda/PySpark; Docker Compose is included for
+  local HDFS/Hive/PostgreSQL/API/Streamlit service demonstration when Docker
+  Desktop is running.
 
 ---
 
@@ -295,6 +297,9 @@ Key limitation: FAERS disproportionality is signal detection, not causal proof.
 The current warning reference set is also small, with 56 curated rows and only
 7 warnings after the 2020 cutoff.
 
+Current verification details and remaining work are tracked in
+[`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md).
+
 ---
 
 ## Repository Layout
@@ -478,7 +483,8 @@ What is already defensible:
 - Hive/HQL implementation of the core signal math
 - overflow-safe chi-square computation in both Spark and Hive
 - robust PRR/ROR quality filter to reduce obvious artifact-like rankings
-- Docker Compose demonstration of the distributed architecture
+- Docker Compose files and smoke-test target for demonstrating the distributed
+  architecture locally
 - PostgreSQL/API/dashboard serving layer
 - honest backtest against curated FDA warning references
 - explicit false-positive and missed-warning outputs
