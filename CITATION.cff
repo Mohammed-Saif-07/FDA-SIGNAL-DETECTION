@@ -6,6 +6,7 @@ authors:
   - family-names: Mohammed
     given-names: Saif
     affiliation: Seattle University
+    orcid: "https://orcid.org/0009-0002-8303-5315"
 repository-code: "https://github.com/Mohammed-Saif-07/FDA-SIGNAL-DETECTION"
 abstract: "Open-source FAERS pharmacovigilance workflow for reproducible PRR/ROR signal detection, robust artifact filtering, and historical FDA warning backtesting."
 license: MIT

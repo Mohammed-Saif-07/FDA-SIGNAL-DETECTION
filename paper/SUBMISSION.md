@@ -29,7 +29,7 @@ validation set.
 
 ## Before Submission Checklist
 
-- Replace the `ORCID: pending` paper field if an ORCID is available.
+- Confirm the ORCID field is correct: `0009-0002-8303-5315`.
 - Spot-check every BibTeX entry in Google Scholar or PubMed.
 - Verify at least the caught warning and top missed warnings with FDA deep-link
   URLs.
