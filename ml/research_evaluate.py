@@ -410,16 +410,32 @@ def write_method_scores(
 
 def write_primary_backtest_report(summary: pd.DataFrame, cutoff_text: str, out_path: Path) -> dict:
     threshold = summary[summary["evaluation_type"].eq("threshold")].copy()
-    threshold["aggregate_recall"] = threshold["recall"].fillna(0)
+    # Correct pooled ratio: sum(caught) / sum(total) across cutoffs.
+    # Also expose mean-of-per-cutoff recalls as a separate, honestly named field.
+    threshold["per_cutoff_recall"] = threshold["recall"].fillna(0.0)
     ranking = (
         threshold.groupby("method", as_index=False)
         .agg(
-            aggregate_recall=("aggregate_recall", "sum"),
             aggregate_warnings_caught=("warnings_caught", "sum"),
             aggregate_future_warnings=("future_warnings", "sum"),
+            mean_per_cutoff_recall=("per_cutoff_recall", "mean"),
         )
-        .sort_values(["aggregate_recall", "aggregate_warnings_caught"], ascending=False)
     )
+    ranking["aggregate_recall"] = (
+        ranking["aggregate_warnings_caught"]
+        / ranking["aggregate_future_warnings"].replace(0, np.nan)
+    ).fillna(0.0)
+    ranking = ranking[
+        [
+            "method",
+            "aggregate_recall",
+            "mean_per_cutoff_recall",
+            "aggregate_warnings_caught",
+            "aggregate_future_warnings",
+        ]
+    ].sort_values(
+        ["aggregate_warnings_caught", "aggregate_recall"], ascending=False
+    ).reset_index(drop=True)
     row = threshold[
         (threshold["cutoff"].eq(cutoff_text)) & (threshold["method"].eq("bcpnn_ic025_threshold"))
     ].iloc[0]
