@@ -128,21 +128,36 @@ def signal_evolution():
 
 def recall_ci():
     path = ROOT / "data" / "processed" / "research_eval_summary.csv"
-    fig, ax = plt.subplots(figsize=(9, 4))
+    fig, ax = plt.subplots(figsize=(8, 4.5))
     if path.exists():
         df = pd.read_csv(path)
-        subset = df[(df["evaluation_type"] == "top_k") & (df["k"].astype(str) == "100")].copy()
+        subset = df[df["evaluation_type"] == "threshold"].copy()
         subset = subset.dropna(subset=["recall"])
-        labels = subset["cutoff"] + "\n" + subset["method"]
-        yerr = np.vstack([
-            subset["recall"] - subset.get("recall_lo95", subset["recall"]),
-            subset.get("recall_hi95", subset["recall"]) - subset["recall"],
-        ])
-        ax.errorbar(range(len(subset)), subset["recall"], yerr=yerr, fmt="o", capsize=3)
-        ax.set_xticks(range(len(subset)))
-        ax.set_xticklabels(labels, rotation=90, fontsize=6)
-    ax.set_ylabel("recall@100")
-    ax.set_title("Recall@100 by method with 95% CI")
+        subset["method"] = (
+            subset["method"]
+            .str.replace("_threshold_0_5", "", regex=False)
+            .str.replace("_threshold", "", regex=False)
+            .str.replace("_", " ", regex=False)
+            .str.upper()
+        )
+        for method, group in subset.groupby("method", sort=False):
+            group = group.sort_values("cutoff")
+            lower = group["recall"] - group.get("recall_lo95", group["recall"])
+            upper = group.get("recall_hi95", group["recall"]) - group["recall"]
+            ax.errorbar(
+                group["cutoff"],
+                group["recall"],
+                yerr=np.vstack([lower, upper]),
+                marker="o",
+                capsize=3,
+                linewidth=1.5,
+                label=method,
+            )
+    ax.set_ylabel("threshold recall")
+    ax.set_ylim(-0.03, 0.8)
+    ax.set_title("Threshold recall by method with bootstrap 95% CI")
+    ax.tick_params(axis="x", rotation=30)
+    ax.legend(fontsize=7, ncol=2)
     save(fig, "recall_by_method_with_ci")
 
 
@@ -159,4 +174,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

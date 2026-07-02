@@ -152,9 +152,13 @@ regenerating evaluation tables and figures.
 Naive PRR/ROR produced 505,220 raw threshold signals from 4,286,074 feature
 rows. The proxy robust filter retained 100,090 signals, an approximate 19.8\%
 pass rate among raw PRR/ROR signals. In the current regenerated artifact, the
-strict structural filter retained the same 100,090 rows, indicating that the
-remaining robust candidates have nonzero off-diagonal 2x2 margins. The dominant
-rejection reasons were too few cases and low country-count source diversity.
+strict structural filter retained the same 100,090 full-feature candidates,
+indicating that the remaining robust candidates have nonzero off-diagonal 2x2
+margins. The Streamlit dashboard is a compact top-N export derived from these
+research artifacts; the current exported 2,000 dashboard rows pass both robust
+and structural flags and should not be interpreted as the full candidate
+population. The dominant rejection reasons were too few cases and low
+country-count source diversity.
 
 \begin{figure}[h]
 \centering
@@ -178,6 +182,7 @@ methods flag large candidate sets.}
 \label{tab:methods}
 \resizebox{\textwidth}{!}{\inputtablefile{table_methods.tex}}
 \end{table}
+\normalfont\normalsize
 
 \begin{figure}[h]
 \centering
@@ -187,11 +192,15 @@ intervals. BCPNN IC025 has the highest point estimate at each cutoff with
 post-cutoff reference warnings, but intervals overlap.}
 \label{fig:recall}
 \end{figure}
+\normalfont\normalsize
 
 \subsection{Ranking and Lead Time}
 ROC and precision-recall curves summarize ranking behavior at the 2020 cutoff.
 The ranking plots should be interpreted descriptively because the positive
-class is very small.
+class is very small. Lead time is reported in Table~\ref{tab:caught} for the
+caught historical warning pair rather than as a distributional plot, because the
+current 2020-cutoff validation artifact contains only one non-null median
+lead-time value across the methods.
 
 \begin{figure}[h]
 \centering
@@ -208,29 +217,14 @@ low because public FAERS candidate space is large relative to the curated
 warning set.}
 \label{fig:pr}
 \end{figure}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.82\linewidth]{lead_time_histogram.png}
-\caption{Lead-time distribution for caught historical FDA warning pairs. Lead
-time is measured from the first available quarter-end signal crossing when
-available.}
-\label{fig:lead}
-\end{figure}
+\normalfont\normalsize
 
 \subsection{Case Study}
 The main 2020-cutoff case study is UPADACITINIB--MYOCARDIAL INFARCTION, which
 crossed the signal threshold on 2020-03-31 and had a reference FDA action date
-of 2021-09-01.
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.82\linewidth]{signal_evolution_upadacitinib.png}
-\caption{Temporal signal evolution for UPADACITINIB--MYOCARDIAL INFARCTION.
-The signal crossed the configured disproportionality threshold before the
-reference FDA action date.}
-\label{fig:upadacitinib}
-\end{figure}
+of 2021-09-01. The temporal artifact currently records the threshold-crossing
+quarter for this pair rather than a dense longitudinal trajectory, so the
+result is summarized as a case-study table instead of a time-series figure.
 
 \begin{table}[h]
 \centering
@@ -238,6 +232,7 @@ reference FDA action date.}
 \label{tab:caught}
 \resizebox{\textwidth}{!}{\inputtablefile{table_caught_warnings.tex}}
 \end{table}
+\normalfont\normalsize
 
 \begin{figure}[h]
 \centering
@@ -245,6 +240,7 @@ reference FDA action date.}
 \caption{Threshold sensitivity analysis for signal-detection settings.}
 \label{fig:sensitivity}
 \end{figure}
+\normalfont\normalsize
 
 \subsection{Ranking Stability}
 \label{sec:ranking-stability}
