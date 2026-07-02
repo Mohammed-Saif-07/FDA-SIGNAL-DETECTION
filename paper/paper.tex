@@ -111,7 +111,7 @@ flattened drug/reaction observations, and generated an aggregate feature table
 with 4,286,074 drug-reaction rows and 20,864,371 scanned co-report
 observations. The warning reference file contains 56 hand-curated historical FDA
 safety actions. Warning source deep links remain an explicit curation task for
-most entries and are documented in \texttt{data/reference/warnings\_todo.md}.
+most entries and are documented in the warning-source TODO file.
 
 \subsection{Signal Generation}
 PRR/ROR and chi-square calculations were implemented in PySpark and mirrored in
@@ -138,13 +138,13 @@ paired ROC AUC comparisons \cite{delong1988roc,sun2014delong,efron1993bootstrap}
 
 \section{Experimental Setup}
 Experiments ran locally on macOS Apple Silicon using Python 3.11 in a conda
-environment. The repository includes a Docker Compose stack and
-\texttt{make smoke-docker} target for HDFS, Hive, PostgreSQL, API, and
+environment. The repository includes a Docker Compose stack and a Docker
+smoke-test target for HDFS, Hive, PostgreSQL, API, and
 Streamlit service validation. On July 1, 2026, this smoke test passed on Docker
 Desktop using a 5,000-row real Parquet sample; Hive created the expected tables,
 executed the PRR/ROR HQL, and returned 33 smoke-sample threshold signals. The
-reproducibility package includes \texttt{requirements.lock},
-\texttt{Dockerfile.research}, deterministic seeds, and make targets for
+reproducibility package includes pinned requirements, a research Dockerfile,
+deterministic seeds, and make targets for
 regenerating evaluation tables and figures.
 
 \section{Results}
@@ -257,14 +257,14 @@ resamples (mean rank 1.008); the four remaining methods
 approximately 3.5. This indicates that the BCPNN advantage is stable under
 cutoff resampling, subject to the underlying small-sample uncertainty
 captured by the per-cutoff bootstrap CIs. Full results are in
-\texttt{data/processed/method_ranking_stability.csv}.
+the generated method-ranking stability CSV artifact.
 
 \subsection{XGBoost Calibration}
 \label{sec:calibration}
 Figure~\ref{fig:calibration} shows the reliability diagram for the XGBoost
 recall-probability output on the committed prediction snapshot. Because the
 labelled positive rate is small (8 of 2000 rows carry a non-null
-\texttt{actual\_fda\_warning\_date}), the empirical positive rate in most
+actual FDA warning date field), the empirical positive rate in most
 predicted-probability deciles is not reliably estimable; the diagram is
 included for transparency rather than to claim calibration quality. Any
 downstream operational use of the model would require recalibration on a
@@ -285,15 +285,14 @@ calibration assessment.}
 As a standard pharmacovigilance benchmark, we curated 20 well-known
 drug-reaction pairs that are commonly co-reported in FAERS but have not been
 the subject of an FDA safety action, drawn from the PV
-literature~\cite{harpaz2012novel} (list in
-\texttt{data/reference/negative\_controls.csv}). At the standard threshold
+literature~\cite{harpaz2012novel}. At the standard threshold
 gate (PRR>2, ROR>2, chi-square$\geq$4, cases$\geq$3), zero of the 20
 negative-control pairs triggered a signal on the committed snapshot,
 yielding a curated-set specificity estimate of 1.0. We stress that
 specificity here is restricted to the curated negatives; the false-positive
 population as a whole is dominated by confounding-by-indication signals not
-represented in this small control set. Full results:
-\texttt{data/processed/negative\_control\_results.csv}.
+represented in this small control set. Full results are emitted as a generated
+negative-control CSV artifact.
 
 \section{Discussion}
 BCPNN IC025 outperformed the other evaluated threshold methods in point
@@ -330,10 +329,10 @@ paper should be interpreted as causal evidence or clinical guidance.
 
 \section{Reproducibility}
 The full workflow is available in the accompanying repository. The primary
-reproduction entry point is \texttt{make reproduce-paper}, assuming feature
+reproduction entry point is the paper-reproduction make target, assuming feature
 Parquet artifacts are present. Raw FAERS files and generated feature Parquet are
 excluded from Git because of size. The Docker research image and
-\texttt{docs/REPRODUCIBILITY.md} document the replay environment.
+reproducibility checklist document the replay environment.
 
 \section{Conclusion}
 This work provides a reproducible public-FAERS benchmark for classical and

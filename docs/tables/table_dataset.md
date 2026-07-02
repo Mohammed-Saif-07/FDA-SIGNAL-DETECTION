@@ -1,7 +1,7 @@
 | metric                     |    value |
 |:---------------------------|---------:|
-| feature_rows               |  4286074 |
-| distinct_drugs             |   123881 |
-| distinct_reactions         |    16852 |
-| drug_reaction_rows_scanned | 20864371 |
-| reference_warnings         |       56 |
+| feature rows               |  4286074 |
+| distinct drugs             |   123881 |
+| distinct reactions         |    16852 |
+| drug reaction rows scanned | 20864371 |
+| reference warnings         |       56 |

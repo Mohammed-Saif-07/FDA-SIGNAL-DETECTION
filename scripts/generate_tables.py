@@ -83,6 +83,10 @@ def caught_warnings():
         df = df[[c for c in keep if c in df.columns]]
         if "months_early" in df.columns:
             df["months_early"] = df["months_early"].map(lambda x: "" if pd.isna(x) else f"{float(x):.1f}")
+        if "lead_time_basis" in df.columns:
+            df["lead_time_basis"] = df["lead_time_basis"].map(
+                lambda x: "" if pd.isna(x) else str(x).replace("_", " ")
+            )
         df = df.rename(
             columns={
                 "drug_name": "drug",
@@ -105,13 +109,13 @@ def dataset_table():
     warnings = ROOT / "data" / "reference" / "fda_warnings.csv"
     if features.exists():
         df = pd.read_parquet(features, columns=["drug_name", "reaction_term", "case_count"])
-        rows.append({"metric": "feature_rows", "value": len(df)})
-        rows.append({"metric": "distinct_drugs", "value": df["drug_name"].nunique()})
-        rows.append({"metric": "distinct_reactions", "value": df["reaction_term"].nunique()})
-        rows.append({"metric": "drug_reaction_rows_scanned", "value": int(df["case_count"].sum())})
+        rows.append({"metric": "feature rows", "value": len(df)})
+        rows.append({"metric": "distinct drugs", "value": df["drug_name"].nunique()})
+        rows.append({"metric": "distinct reactions", "value": df["reaction_term"].nunique()})
+        rows.append({"metric": "drug reaction rows scanned", "value": int(df["case_count"].sum())})
     if warnings.exists():
         w = pd.read_csv(warnings)
-        rows.append({"metric": "reference_warnings", "value": len(w)})
+        rows.append({"metric": "reference warnings", "value": len(w)})
     write_table(pd.DataFrame(rows), "table_dataset")
 
 
