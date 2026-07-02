@@ -4,6 +4,8 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{adjustbox}
+\graphicspath{{figures/}{../docs/figures/}}
+\newcommand{\inputtablefile}[1]{\IfFileExists{tables/#1}{\input{tables/#1}}{\input{../docs/tables/#1}}}
 
 \title{Reproducible Drug Safety Signal Detection on Public FAERS Data}
 \author{Mohammed Saif\\
@@ -156,7 +158,7 @@ rejection reasons were too few cases and low country-count source diversity.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/artifact_rate_before_after.png}
+\includegraphics[width=0.82\linewidth]{artifact_rate_before_after.png}
 \caption{Estimated artifact rate before and after robust signal filtering. The
 proxy robust filter removes low-count, low-diversity, low-seriousness, extreme
 ratio, and invalid chi-square candidates before ranking.}
@@ -174,12 +176,12 @@ intervals are wide because each cutoff has only 7--11 future reference warnings.
 confidence intervals ($n=1000$, seed 42). Precision is low because threshold
 methods flag large candidate sets.}
 \label{tab:methods}
-\resizebox{\textwidth}{!}{\input{../docs/tables/table_methods.tex}}
+\resizebox{\textwidth}{!}{\inputtablefile{table_methods.tex}}
 \end{table}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/recall_by_method_with_ci.png}
+\includegraphics[width=0.82\linewidth]{recall_by_method_with_ci.png}
 \caption{Recall by threshold method and cutoff with bootstrap confidence
 intervals. BCPNN IC025 has the highest point estimate at each cutoff with
 post-cutoff reference warnings, but intervals overlap.}
@@ -193,14 +195,14 @@ class is very small.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/roc_curves_2020.png}
+\includegraphics[width=0.82\linewidth]{roc_curves_2020.png}
 \caption{ROC curves for candidate ranking methods at the 2020-12-31 cutoff.}
 \label{fig:roc}
 \end{figure}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/pr_curves_2020.png}
+\includegraphics[width=0.82\linewidth]{pr_curves_2020.png}
 \caption{Precision-recall curves at the 2020-12-31 cutoff. Precision remains
 low because public FAERS candidate space is large relative to the curated
 warning set.}
@@ -209,7 +211,7 @@ warning set.}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/lead_time_histogram.png}
+\includegraphics[width=0.82\linewidth]{lead_time_histogram.png}
 \caption{Lead-time distribution for caught historical FDA warning pairs. Lead
 time is measured from the first available quarter-end signal crossing when
 available.}
@@ -223,7 +225,7 @@ of 2021-09-01.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/signal_evolution_upadacitinib.png}
+\includegraphics[width=0.82\linewidth]{signal_evolution_upadacitinib.png}
 \caption{Temporal signal evolution for UPADACITINIB--MYOCARDIAL INFARCTION.
 The signal crossed the configured disproportionality threshold before the
 reference FDA action date.}
@@ -234,12 +236,12 @@ reference FDA action date.}
 \centering
 \caption{Caught warning case study for the 2020 cutoff.}
 \label{tab:caught}
-\resizebox{\textwidth}{!}{\input{../docs/tables/table_caught_warnings.tex}}
+\resizebox{\textwidth}{!}{\inputtablefile{table_caught_warnings.tex}}
 \end{table}
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.82\linewidth]{../docs/figures/sensitivity.png}
+\includegraphics[width=0.82\linewidth]{sensitivity.png}
 \caption{Threshold sensitivity analysis for signal-detection settings.}
 \label{fig:sensitivity}
 \end{figure}
@@ -271,7 +273,7 @@ present benchmark.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.72\linewidth]{../docs/figures/xgboost_calibration.png}
+\includegraphics[width=0.72\linewidth]{xgboost_calibration.png}
 \caption{XGBoost reliability diagram (top) and predicted-probability
 histogram (bottom). The small positive count precludes a reliable
 calibration assessment.}
