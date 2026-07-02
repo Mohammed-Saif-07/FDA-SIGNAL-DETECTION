@@ -1,3 +1,3 @@
-| drug_name    | reaction_term         | warning_date   | signal_first_detected_date   |   days_early |   months_early | lead_time_basis            |
-|:-------------|:----------------------|:---------------|:-----------------------------|-------------:|---------------:|:---------------------------|
-| UPADACITINIB | MYOCARDIAL INFARCTION | 2021-09-01     | 2020-03-31                   |          519 |           17.3 | signal_first_detected_date |
+| drug         | reaction              | warning date   | signal first detected   |   days early |   months early | lead time basis            |
+|:-------------|:----------------------|:---------------|:------------------------|-------------:|---------------:|:---------------------------|
+| UPADACITINIB | MYOCARDIAL INFARCTION | 2021-09-01     | 2020-03-31              |          519 |           17.3 | signal_first_detected_date |

@@ -14,7 +14,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 def write_table(df: pd.DataFrame, name: str):
     df.to_markdown(OUT / f"{name}.md", index=False)
-    (OUT / f"{name}.tex").write_text(df.to_latex(index=False, escape=False, caption=None))
+    (OUT / f"{name}.tex").write_text(df.to_latex(index=False, escape=True, caption=None))
 
 
 def _fmt_float(value: object, digits: int = 3) -> str:
@@ -35,7 +35,7 @@ def methods_table():
         "robust_prr_ror_threshold": "Robust PRR/ROR",
         "bcpnn_ic025_threshold": "BCPNN IC025",
         "ebgm_eb05_threshold": "EBGM/EB05",
-        "xgboost_threshold_0_5": "XGBoost >= 0.5",
+        "xgboost_threshold_0_5": "XGBoost threshold 0.5",
     }
     path = ROOT / "data" / "processed" / "research_eval_summary.csv"
     if not path.exists():
@@ -56,8 +56,8 @@ def methods_table():
             rows.append(
                 {
                     "cutoff": cutoff,
-                    "method": r"\textbf{future warnings}",
-                    "warnings": rf"\textbf{{{warnings_total}}}",
+                    "method": "future warnings",
+                    "warnings": str(warnings_total),
                     "recall": "",
                     "recall_95ci": "",
                     "precision": "",
@@ -66,6 +66,12 @@ def methods_table():
             )
             rows.extend(group[["cutoff", "method", "warnings", "recall", "recall_95ci", "precision", "lead_days"]].to_dict("records"))
         df = pd.DataFrame(rows, columns=["cutoff", "method", "warnings", "recall", "recall_95ci", "precision", "lead_days"])
+        df = df.rename(
+            columns={
+                "recall_95ci": "recall 95% CI",
+                "lead_days": "lead days",
+            }
+        )
     write_table(df, "table_methods")
 
 
@@ -75,6 +81,19 @@ def caught_warnings():
         df = pd.read_csv(path)
         keep = ["drug_name", "reaction_term", "warning_date", "signal_first_detected_date", "days_early", "months_early", "lead_time_basis"]
         df = df[[c for c in keep if c in df.columns]]
+        if "months_early" in df.columns:
+            df["months_early"] = df["months_early"].map(lambda x: "" if pd.isna(x) else f"{float(x):.1f}")
+        df = df.rename(
+            columns={
+                "drug_name": "drug",
+                "reaction_term": "reaction",
+                "warning_date": "warning date",
+                "signal_first_detected_date": "signal first detected",
+                "days_early": "days early",
+                "months_early": "months early",
+                "lead_time_basis": "lead time basis",
+            }
+        )
     else:
         df = pd.DataFrame(columns=["drug_name", "reaction_term", "warning_date", "signal_first_detected_date", "days_early"])
     write_table(df, "table_caught_warnings")
